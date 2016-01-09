@@ -5,20 +5,16 @@
 namespace detail {
 
 struct RandomWait {
+	std::mt19937 random_engine{ std::random_device{}() };
 	void operator()() {
 		static const constexpr std::size_t MAX = 100000;
 		std::uniform_int_distribution<std::size_t> dist(0, MAX);
 		std::size_t N = dist(random_engine);
 		for (std::size_t i = 0; i < N; ++i) {
-			//dummy = ++dummy * 3 - 2;
-
 			// http://stackoverflow.com/questions/7083482/how-to-prevent-gcc-from-optimizing-out-a-busy-wait-loop
-			__asm__ __volatile__("");
+			__asm__("");
 		}
 	}
-	//int dummy = 1;
-
-	std::mt19937 random_engine{ std::random_device{}() };
 };
 
 template <std::size_t N, typename F>
