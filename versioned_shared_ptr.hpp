@@ -12,6 +12,7 @@ public:
 
     versioned_shared_ptr& operator=(const versioned_shared_ptr& rhs) {
         write(rhs.sp);
+        return *this;
     }
 
     std::shared_ptr<const T> read() { return std::atomic_load(&sp); }
