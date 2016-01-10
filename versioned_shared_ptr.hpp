@@ -10,6 +10,12 @@ public:
     // template <typename Y>
     // versioned_shared_ptr(const std::shared_ptr<Y>& r) {}
 
+    versioned_shared_ptr() = default;
+
+    versioned_shared_ptr(const versioned_shared_ptr& rhs) {
+        sp = std::atomic_load(&rhs.sp);
+    }
+
     versioned_shared_ptr& operator=(const versioned_shared_ptr& rhs) {
         write(rhs.sp);
         return *this;
