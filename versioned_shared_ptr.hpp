@@ -28,18 +28,17 @@ public:
     //     auto p = versioned_shared_ptr<int>{};
     // should be supported, therefore delete the move operations explicitly
     // is not an option.
-    //versioned_shared_ptr(versioned_shared_ptr&&) = delete;
-    //versioned_shared_ptr& operator=(versioned_shared_ptr&&) = delete;
+    //     versioned_shared_ptr(versioned_shared_ptr&&) = delete;
+    //     versioned_shared_ptr& operator=(versioned_shared_ptr&&) = delete;
 
     ~versioned_shared_ptr() = default;
-
 
     std::shared_ptr<const T> read() { return std::atomic_load(&sp); }
 
     void write(const std::shared_ptr<T>& r) {
         auto sp_l = std::atomic_load(&sp);
         auto exchange_result = false;
-        //while (sp_l && !exchange_result) {
+        // while (sp_l && !exchange_result) {
         while (!exchange_result) {
             // True if exchange was performed
             // If sp == sp_l (share ownership of the same pointer),
