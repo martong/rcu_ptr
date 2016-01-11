@@ -98,12 +98,14 @@ The goal is to provide a general higher level abstraction above atomic_shared_pt
 class X {
     versioned_shared_ptr<std::vector<int>> v;
 public:
+    X() {
+        v.write(std::make_shared<std::vector<int>>());
+    }
     int sum() const { // read operation
         std::shared_ptr<const std::vector<int>> local_copy = v.read();
         return std::accumulate(local_copy->begin(), local_copy->end(), 0);
     }
     void add(int i) { // write operation
-        // Do a deep copy of the container
         auto local_copy = std::make_shared<std::vector<int>>(*v.read());
         local_copy->push_back(i);
         v.write(local_copy);
