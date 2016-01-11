@@ -49,6 +49,15 @@ public:
     }
 };
 ```
+Now we have a race on the pointee itself.
+So we need to have a deep copy.
+```c++
+        {
+            std::lock_guard<std::mutex> lock{m};
+            //local_copy = v;
+            local_copy = std::make_shared<std::vector<int>>(*v);
+        }
+```
 Now, if there are two concurrent write operations than we might miss one update.
 We'd need to check whether the other writer had done an update after the actual writer has loaded the local copy.
 If it did then we should load the data again and try to do the update again.
