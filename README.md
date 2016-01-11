@@ -58,7 +58,6 @@ So we could use an `atomic_shared_ptr` from C++17, but until then we have to set
 ```c++
 class X {
     std::shared_ptr<std::vector<int>> v;
-    mutable std::mutex m;
 public:
     int sum() const { // read operation
         auto local_copy = std::atomic_load(&v);
