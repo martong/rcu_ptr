@@ -97,7 +97,6 @@ The goal is to provide a general higher level abstraction above atomic_shared_pt
 ```c++
 class X {
     versioned_shared_ptr<std::vector<int>> v;
-    mutable std::mutex m;
 public:
     int sum() const { // read operation
         std::shared_ptr<const std::vector<int>> local_copy = v.read();
