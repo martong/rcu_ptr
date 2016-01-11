@@ -65,8 +65,8 @@ So we need to have a deep copy.
             v = local_deep_copy;
         }
     }
-
 ```
+The copy construction of the underlying data (vector<int>) is thread safe, since the copy ctor param is a const ref `const std::vector<int>&`.
 Now, if there are two concurrent write operations than we might miss one update.
 We'd need to check whether the other writer had done an update after the actual writer has loaded the local copy.
 If it did then we should load the data again and try to do the update again.
@@ -77,12 +77,16 @@ So we could use an `atomic_shared_ptr` from C++17, but until then we have to set
 class X {
     std::shared_ptr<std::vector<int>> v;
 public:
+    X() : v(std::make_shared<std::vector<int>>()) {}
     int sum() const { // read operation
         auto local_copy = std::atomic_load(&v);
         return std::accumulate(local_copy->begin(), local_copy->end(), 0);
     }
     void add(int i) { // write operation
-        auto local_copy = std::atomic_load(&v);
+        //auto local_copy = std::atomic_load(&v); // BAD
+        // we need a deep copy
+        auto local_copy = std::make_shared<std::vector<int>>(
+            *std::atomic_load(&v));
         local_copy->push_back(i);
         auto exchange_result = false;
         while (!exchange_result) {
@@ -109,8 +113,8 @@ But nothing stops an other programmer (e.g. a naive maintainer of the code years
     }
 ```
 This is definetly a race condition and a problem. 
-And this is the exact reason why versioned_shared_ptr was created.
-The goal is to provide a general higher level abstraction above atomic_shared_ptr.
+And this is the exact reason why `versioned_shared_ptr` was created.
+The goal is to provide a general higher level abstraction above `atomic_shared_ptr`.
 
 ```c++
 class X {
@@ -124,6 +128,7 @@ public:
         return std::accumulate(local_copy->begin(), local_copy->end(), 0);
     }
     void add(int i) { // write operation
+        // deep copy is forced, since read() returns a const T pointee.
         auto local_copy = std::make_shared<std::vector<int>>(*v.read());
         local_copy->push_back(i);
         v.write(local_copy);
@@ -134,7 +139,6 @@ The read operation of `versioned_shared_ptr` returns a shared_ptr<const T> by va
 The write operation receives a `const shared_ptr<T>&` which will be the new shared_ptr after the `atomic_compare_exchange` is finished inside.
 Consequently, the write operation needs to do a deep copy if it wants to preserve some elements of the original data.
 
-// TODO
-Therefore `versioned_shared_ptr` is not as performant as `atomic_shared_ptr` e.g. in a case of a simple push_back.
-But there are cases when we update the entire data in a lock step (e.g. fetch a table from a database), and there are no small data updates.
+# The Name
+`versioned_shared_ptr` is probably not the best name.
 
