@@ -26,6 +26,7 @@ class X {
     std::shared_ptr<std::vector<int>> v;
     mutable std::mutex m;
 public:
+    X() : v(std::make_shared<std::vector<int>>()) {}
     int sum() const { // read operation
         std::shared_ptr<std::vector<int>> local_copy;
         {
