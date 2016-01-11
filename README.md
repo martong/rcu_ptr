@@ -49,14 +49,23 @@ public:
     }
 };
 ```
-Now we have a race on the pointee itself.
+Now we have a race on the pointee itself during the write.
 So we need to have a deep copy.
 ```c++
+    void add(int i) { // write operation
+        std::shared_ptr<std::vector<int>> local_copy;
         {
             std::lock_guard<std::mutex> lock{m};
-            //local_copy = v;
-            local_copy = std::make_shared<std::vector<int>>(*v);
+            local_copy = v;
         }
+        auto local_deep_copy = std::make_shared<std::vector<int>>(*local_copy);
+        local_deep_copy->push_back(i);
+        {
+            std::lock_guard<std::mutex> lock{m};
+            v = local_deep_copy;
+        }
+    }
+
 ```
 Now, if there are two concurrent write operations than we might miss one update.
 We'd need to check whether the other writer had done an update after the actual writer has loaded the local copy.
