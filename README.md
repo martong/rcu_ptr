@@ -134,9 +134,9 @@ public:
 The read operation of `versioned_shared_ptr` returns a shared_ptr<const T> by value, therefore it is thread safe.
 The `overwrite` operation receives a `const shared_ptr<T>&` which will be the new shared_ptr after the `atomic_compare_exchange` is finished inside.
 The `update` operation receives a lambda which is called whenever an update needs to be done, i.e. it will be called continusly until the update is successful.
-The lambda receives a const T& for the actual contained data.
+The lambda receives a `const T&` for the actual contained data.
 Consequently, the update operation needs to do a deep copy if it wants to preserve some elements of the original data.
 
 # The Name
-`versioned_shared_ptr` is probably not the best name. We might call it cow_shared_ptr (copy-on-write), but some insist that COW stands for other things and it might be confusing. Though I like the name cow_shared_ptr, because it literally expresses what this class does.
+`versioned_shared_ptr` is probably not the best name. We might call it `cow_shared_ptr` (copy-on-write), but some insist that COW stands for other things and it might be confusing. Though I like the name `cow_shared_ptr`, because it literally expresses what this class does.
 
