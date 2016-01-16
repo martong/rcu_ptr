@@ -83,20 +83,16 @@ public:
         return std::accumulate(local_copy->begin(), local_copy->end(), 0);
     }
     void add(int i) { // write operation
-        //auto local_copy = std::atomic_load(&v); // BAD
-        // we need a deep copy
-        auto local_copy = std::make_shared<std::vector<int>>(
-            *std::atomic_load(&v));
-        local_copy->push_back(i);
+        auto local_copy = std::atomic_load(&v);
         auto exchange_result = false;
         while (!exchange_result) {
-            // True if exchange was performed
-            // If sp == sp_l (share ownership of the same pointer),
-            //   assigns r into sp
-            // If sp != sp_l, assigns sp into sp_l
+            // we need a deep copy
+            auto local_deep_copy = std::make_shared<std::vector<int>>(
+                    *local_copy);
+            local_deep_copy->push_back(i);
             exchange_result =
                 std::atomic_compare_exchange_strong(&v, &local_copy,
-                                                    local_copy);
+                                                    local_deep_copy);
         }
     }
 };
