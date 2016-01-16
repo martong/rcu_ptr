@@ -59,9 +59,7 @@ void test_assign_write() {
     auto p = versioned_shared_ptr<int>{};
 
     std::thread t2{[&p]() {
-        executeInLoop<10000>([&p]() {
-			p = versioned_shared_ptr<int>{};
-        });
+        executeInLoop<10000>([&p]() { p = versioned_shared_ptr<int>{}; });
     }};
 
     std::thread t1{[&p]() {
@@ -78,11 +76,7 @@ void test_assign_write() {
 void test_copyctor_write() {
     auto p = versioned_shared_ptr<int>{};
 
-    std::thread t2{[&p]() {
-        executeInLoop<10000>([&p]() {
-			auto p2 = p;
-        });
-    }};
+    std::thread t2{[&p]() { executeInLoop<10000>([&p]() { auto p2 = p; }); }};
 
     std::thread t1{[&p]() {
         executeInLoop<10000>([&p]() {
@@ -98,16 +92,10 @@ void test_copyctor_write() {
 void test_copyctor_assign() {
     auto p = versioned_shared_ptr<int>{};
 
-    std::thread t1{[&p]() {
-        executeInLoop<10000>([&p]() {
-			auto p2 = p;
-        });
-    }};
+    std::thread t1{[&p]() { executeInLoop<10000>([&p]() { auto p2 = p; }); }};
 
     std::thread t2{[&p]() {
-        executeInLoop<10000>([&p]() {
-			p = versioned_shared_ptr<int>{};
-        });
+        executeInLoop<10000>([&p]() { p = versioned_shared_ptr<int>{}; });
     }};
 
     t1.join();
@@ -118,7 +106,7 @@ int main() {
     test_read_write();
     test_write_write();
     test_read_read();
-	test_assign_write();
-	test_copyctor_write();
-	test_copyctor_assign();
+    test_assign_write();
+    test_copyctor_write();
+    test_copyctor_assign();
 }
