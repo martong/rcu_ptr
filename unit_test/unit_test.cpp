@@ -20,9 +20,7 @@ struct A {
 void test() {
     auto p = versioned_shared_ptr<int>{};
     auto new_ = std::make_shared<int>(42);
-    p.write(new_);
-    //auto rp = p.read();
-    //ASSERT(42 == *rp);
+    p.overwrite(new_);
     ASSERT(42 == *p.read());
 }
 

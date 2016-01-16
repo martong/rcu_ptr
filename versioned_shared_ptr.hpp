@@ -17,7 +17,7 @@ public:
         sp = std::atomic_load(&rhs.sp);
     }
     versioned_shared_ptr& operator=(const versioned_shared_ptr& rhs) {
-        write(rhs.sp);
+        overwrite(rhs.sp);
         return *this;
     }
 
@@ -35,17 +35,51 @@ public:
 
     std::shared_ptr<const T> read() const { return std::atomic_load(&sp); }
 
-    void write(const std::shared_ptr<T>& r) {
-        auto sp_l = std::atomic_load(&sp);
+    // Overwrites the content of the wrapped shared_ptr.
+    // We don't get any information about the intermediate updates/overwrites.
+    // We can use it to reset the wrapped data to a new value independent from
+    // the old value.
+    // E.g. vector.clear()
+    void overwrite(const std::shared_ptr<T>& r) {
+        std::shared_ptr<T> sp_l = std::atomic_load(&sp);
         auto exchange_result = false;
-        // while (sp_l && !exchange_result) {
         while (!exchange_result) {
             // True if exchange was performed
             // If sp == sp_l (share ownership of the same pointer),
-            //   assigns r into sp
-            // If sp != sp_l, assigns sp into sp_l
+            //   assigns r into sp (atomic load)
+            // If sp != sp_l, assigns sp into sp_l (atomic load)
             exchange_result =
                 std::atomic_compare_exchange_strong(&sp, &sp_l, r);
         }
     }
+
+    // This version requires the client to do the copy with make_shared
+    //template <typename R>
+    //void update(R&& fun) {
+        //std::shared_ptr<T> sp_l = std::atomic_load(&sp);
+        //auto exchange_result = false;
+        //while (!exchange_result) {
+            //auto r = std::forward<R>(fun)(std::shared_ptr<const T>(sp_l));
+            //exchange_result =
+                //std::atomic_compare_exchange_strong(&sp, &sp_l, r);
+        //}
+    //}
+
+    // Updates the content of the wrapped shared_ptr.
+    // We do get information about the intermediate updates/overwrites.
+    // We can use it to update the wrapped data to a new value dependent from
+    // the old value.
+    // E.g. vector.push_back()
+    template <typename R>
+    void update(R&& fun) {
+        std::shared_ptr<T> sp_l = std::atomic_load(&sp);
+        auto exchange_result = false;
+        while (!exchange_result) {
+            auto new_ = std::forward<R>(fun)(static_cast<const T&>(*sp_l));
+            auto r = std::make_shared<T>(new_);
+            exchange_result =
+                std::atomic_compare_exchange_strong(&sp, &sp_l, r);
+        }
+    }
+
 };
