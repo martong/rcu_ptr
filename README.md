@@ -138,5 +138,5 @@ The lambda receives a const T& for the actual contained data.
 Consequently, the update operation needs to do a deep copy if it wants to preserve some elements of the original data.
 
 # The Name
-`versioned_shared_ptr` is probably not the best name.
+`versioned_shared_ptr` is probably not the best name. We might call it cow_shared_ptr (copy-on-write), but some insist that COW stands for other things and it might be confusing. Though I like the name cow_shared_ptr, because it literally expresses what this class does.
 
