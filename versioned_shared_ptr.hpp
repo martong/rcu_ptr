@@ -33,7 +33,7 @@ public:
 
     ~versioned_shared_ptr() = default;
 
-    std::shared_ptr<const T> read() { return std::atomic_load(&sp); }
+    std::shared_ptr<const T> read() const { return std::atomic_load(&sp); }
 
     void write(const std::shared_ptr<T>& r) {
         auto sp_l = std::atomic_load(&sp);
