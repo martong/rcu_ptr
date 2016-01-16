@@ -115,25 +115,27 @@ The goal is to provide a general higher level abstraction above `atomic_shared_p
 ```c++
 class X {
     versioned_shared_ptr<std::vector<int>> v;
+
 public:
-    X() {
-        v.write(std::make_shared<std::vector<int>>());
-    }
+    X() { v.overwrite(std::make_shared<std::vector<int>>()); }
     int sum() const { // read operation
         std::shared_ptr<const std::vector<int>> local_copy = v.read();
         return std::accumulate(local_copy->begin(), local_copy->end(), 0);
     }
     void add(int i) { // write operation
-        // deep copy is forced, since read() returns a const T pointee.
-        auto local_copy = std::make_shared<std::vector<int>>(*v.read());
-        local_copy->push_back(i);
-        v.write(local_copy);
+        v.update([i](const std::vector<int>& v) {
+            auto new_ = v;
+            new_.push_back(i);
+            return new_;
+        });
     }
 };
 ```
 The read operation of `versioned_shared_ptr` returns a shared_ptr<const T> by value, therefore it is thread safe.
-The write operation receives a `const shared_ptr<T>&` which will be the new shared_ptr after the `atomic_compare_exchange` is finished inside.
-Consequently, the write operation needs to do a deep copy if it wants to preserve some elements of the original data.
+The `overwrite` operation receives a `const shared_ptr<T>&` which will be the new shared_ptr after the `atomic_compare_exchange` is finished inside.
+The `update` operation receives a lambda which is called whenever an update needs to be done, i.e. it will be called continusly until the update is successful.
+The lambda receives a const T& for the actual contained data.
+Consequently, the update operation needs to do a deep copy if it wants to preserve some elements of the original data.
 
 # The Name
 `versioned_shared_ptr` is probably not the best name.
