@@ -66,8 +66,8 @@ public:
         std::shared_ptr<T> sp_l = std::atomic_load(&sp);
         auto exchange_result = false;
         while (!exchange_result) {
-            auto new_ = std::forward<R>(fun)(static_cast<const T&>(*sp_l));
-            auto r = std::make_shared<T>(new_);
+            T new_ = std::forward<R>(fun)(static_cast<const T&>(*sp_l));
+            auto r = std::make_shared<T>(std::move(new_));
             exchange_result =
                 std::atomic_compare_exchange_strong(&sp, &sp_l, r);
         }
