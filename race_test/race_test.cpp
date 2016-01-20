@@ -22,6 +22,7 @@ void race() {
 
 void test_read_overwrite() {
     auto p = versioned_shared_ptr<int>{};
+    p.overwrite(std::make_shared<int>(42));
 
     std::thread t1{[&p]() {
         executeInLoop<10000>([&p]() {
@@ -37,6 +38,7 @@ void test_read_overwrite() {
 
 void test_read_update() {
     auto p = versioned_shared_ptr<int>{};
+    p.overwrite(std::make_shared<int>(42));
 
     std::thread t1{[&p]() {
         executeInLoop<10000>([&p]() {
@@ -116,9 +118,7 @@ void test_overwrite_overwrite() {
 
 void test_update_update() {
     auto p = versioned_shared_ptr<int>{};
-    p.update([](const int&) {
-        return 0;
-    });
+    p.overwrite(std::make_shared<int>(0));
 
     auto l = [&p]() {
         executeInLoop<10000>([&p]() {
@@ -140,9 +140,7 @@ void test_update_push_back() {
     const int i = 2;
     using V = std::vector<int>;
     auto p = versioned_shared_ptr<V>{};
-    p.update([](const V&) {
-        return V{};
-    });
+    p.overwrite(std::make_shared<std::vector<int>>());
 
     auto l = [&p, &i]() {
         executeInLoop<1000>([&p, &i]() {
