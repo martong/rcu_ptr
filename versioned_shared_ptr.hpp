@@ -41,16 +41,7 @@ public:
     // the old value.
     // E.g. vector.clear()
     void overwrite(const std::shared_ptr<T>& r) {
-        std::shared_ptr<T> sp_l = std::atomic_load(&sp);
-        auto exchange_result = false;
-        while (!exchange_result) {
-            // True if exchange was performed
-            // If sp == sp_l (share ownership of the same pointer),
-            //   assigns r into sp (atomic load)
-            // If sp != sp_l, assigns sp into sp_l (atomic load)
-            exchange_result =
-                std::atomic_compare_exchange_strong(&sp, &sp_l, r);
-        }
+        std::atomic_store(&sp, r);
     }
 
     // This version requires the client to do the copy with make_shared
