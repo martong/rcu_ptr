@@ -76,3 +76,10 @@ public:
     }
 
 };
+
+template <typename T, typename... Args>
+auto make_versioned_shared_ptr(Args&&... args) {
+    auto p = versioned_shared_ptr<T>{};
+    p.overwrite(std::make_shared<T>(std::forward<Args>(args)...));
+    return p;
+}
