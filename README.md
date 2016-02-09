@@ -2,7 +2,7 @@
 
 ### Prerequisites
 
-`rcu_ptr` depends on the features of the `C++14` standard, (the tests were) built with (GNU) `Make` (and with the GNU C++ toolchain) and highly dependent on the `ThreadSanitizer` introduced in GCC 4.8 (it is recommended to use GCC 5.1 or newer though).
+`rcu_ptr` depends on the features of the `C++14` standard, furthermore the tests were built with (GNU) `Make` (and with the GNU C++ toolchain) and highly dependent on the `ThreadSanitizer` introduced in GCC 4.8 (it is recommended to use GCC 5.1 or newer though).
 
 ### Building the library
 
@@ -133,12 +133,12 @@ But nothing stops an other programmer (e.g. a naive maintainer of the code years
     }
 ```
 This is definetly a race condition and a problem. 
-And this is the exact reason why `versioned_shared_ptr` was created.
+And this is the exact reason why `rcu_ptr` was created.
 The goal is to provide a general higher level abstraction above `atomic_shared_ptr`.
 
 ```c++
 class X {
-    versioned_shared_ptr<std::vector<int>> v;
+    rcu_ptr<std::vector<int>> v;
 
 public:
     X() { v.overwrite(std::make_shared<std::vector<int>>()); }
@@ -155,12 +155,13 @@ public:
     }
 };
 ```
-The read operation of `versioned_shared_ptr` returns a shared_ptr<const T> by value, therefore it is thread safe.
+The read operation of `rcu_ptr` returns a shared_ptr<const T> by value, therefore it is thread safe.
 The `overwrite` operation receives a `const shared_ptr<T>&` which will be the new shared_ptr after the `atomic_compare_exchange` is finished inside.
 The `update` operation receives a lambda which is called whenever an update needs to be done, i.e. it will be called continusly until the update is successful.
 The lambda receives a `const T&` for the actual contained data.
 Consequently, the update operation needs to do a deep copy if it wants to preserve some elements of the original data.
 
 ### The Name
-Due to research it has been decided to rename `versioned_shared_ptr` to `rcu_ptr` (reflecting its behaviour (Read-Copy Update) of copying the resource on update internally as in the Linux kernel). 
+
+Due to research it has been decided to rename `rcu_ptr` to `rcu_ptr` (reflecting its behaviour (Read-Copy Update) of copying the resource on update internally as in the Linux kernel). 
 
