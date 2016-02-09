@@ -10,15 +10,13 @@ As of now the library is header only, requires the client to clone the repositor
 
 ### Running the tests
 
-Several tests are included to the project to verify the concept and expected behaviour of the `rcu_ptr`. Each of these are in the subdirectories and building them is easy:
-for example building and running the tests for container would require the execution of the following steps
-
+Several tests are included to the project to verify the concept and expected behaviour of the `rcu_ptr`. Each of these are in the subdirectories and building them is quite simple:
+for example building and running the tests for container(s) would require the execution of the following steps
 ```bash
 cd container
 make
 ./container
 ```
-
 that's it.
 
 
@@ -157,11 +155,12 @@ public:
 ```
 The read operation of `rcu_ptr` returns a shared_ptr<const T> by value, therefore it is thread safe.
 The `overwrite` operation receives a `const shared_ptr<T>&` which will be the new shared_ptr after the `atomic_compare_exchange` is finished inside.
-The `update` operation receives a lambda which is called whenever an update needs to be done, i.e. it will be called continusly until the update is successful.
+The `update` operation receives a lambda which is called whenever an update needs to be done, i.e. it will be called continuously until the update is successful.
 The lambda receives a `const T&` for the actual contained data.
 Consequently, the update operation needs to do a deep copy if it wants to preserve some elements of the original data.
 
 ### The Name
 
-Due to research it has been decided to rename `rcu_ptr` to `rcu_ptr` (reflecting its behaviour (Read-Copy Update) of copying the resource on update internally as in the Linux kernel). 
+Due to research it has been decided to rename `versioned_shared_ptr` to `rcu_ptr` (reflecting its behaviour (Read-Copy Update) of copying the resource on update internally as in the Linux kernel instead of 
+keeping track explicitly of all the versions generated / available). 
 
