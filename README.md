@@ -2,7 +2,7 @@
 
 # Prerequisites
 
-`rcu_ptr` depends on the features of the `C++14` standard, (the tests were) built with (GNU) `Make` (and with the GNU C++ toolchain) and highly dependent on the `ThreadSanitizer` introduced in GCC 4.8.
+`rcu_ptr` depends on the features of the `C++14` standard, (the tests were) built with (GNU) `Make` (and with the GNU C++ toolchain) and highly dependent on the `ThreadSanitizer` introduced in GCC 4.8 (it is recommended to use GCC 5.1 or newer though).
 
 # Building the library
 
