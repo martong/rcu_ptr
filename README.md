@@ -1,4 +1,28 @@
-# versioned_shared_ptr
+### rcu_ptr
+
+# Prerequisites
+
+`rcu_ptr` depends on the features of the `C++14` standard, (the tests were) built with (GNU) `Make` (and with the GNU C++ toolchain) and highly dependent on the `ThreadSanitizer` introduced in GCC 4.8.
+
+# Building the library
+
+As of now the library is header only, requires the client to clone the repository and include `rcu_ptr.hpp` to use it (no separate building or linking is required).
+
+# Running the tests
+
+Several tests are included to the project to verify the concept and expected behaviour of the `rcu_ptr`. Each of these are in the subdirectories and building them is easy:
+for example building and running the tests for container would require the execution of the following steps
+
+```bash
+cd container
+make
+./container
+```
+
+that's it.
+
+
+# Usage
 
 Imagine we have a collection and several reader and some writer threads on it.
 It is a common mistake by some programmers to hold a lock until the collection is iterated on the reader thread.
@@ -138,5 +162,5 @@ The lambda receives a `const T&` for the actual contained data.
 Consequently, the update operation needs to do a deep copy if it wants to preserve some elements of the original data.
 
 # The Name
-`versioned_shared_ptr` is probably not the best name. We might call it `cow_shared_ptr` (copy-on-write), but some insist that COW stands for other things and it might be confusing. Though I like the name `cow_shared_ptr`, because it literally expresses what this class does.
+Due to research it has been decided to rename `versioned_shared_ptr` to `rcu_ptr` (reflecting its behaviour of copying the resource on update internally as in the Linux kernel). 
 
