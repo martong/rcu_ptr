@@ -162,5 +162,5 @@ Consequently, the update operation needs to do a deep copy if it wants to preser
 ### The Name
 
 Due to research it has been decided to rename `versioned_shared_ptr` to `rcu_ptr` (reflecting its behaviour (Read-Copy Update) of copying the resource on update internally as in the Linux kernel instead of 
-keeping track explicitly of all the versions generated / available). 
+keeping track explicitly of all the existing versions). 
 
