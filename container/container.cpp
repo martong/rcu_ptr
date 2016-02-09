@@ -2,7 +2,7 @@
 #include <numeric>
 #include <mutex>
 #include <memory>
-#include "../versioned_shared_ptr.hpp"
+#include "../rcu_ptr.hpp"
 #include "../race_test/ExecuteInLoop.hpp"
 #include <thread>
 
@@ -82,7 +82,7 @@
 //};
 
 class X {
-    versioned_shared_ptr<std::vector<int>> v;
+    rcu_ptr<std::vector<int>> v;
 
 public:
     X() { v.overwrite(std::make_shared<std::vector<int>>()); }
