@@ -1,4 +1,4 @@
-#include "../versioned_shared_ptr.hpp"
+#include "../rcu_ptr.hpp"
 #include "ExecuteInLoop.hpp"
 #include <thread>
 
@@ -21,7 +21,7 @@ void race() {
 }
 
 void test_read_overwrite() {
-    auto p = make_versioned_shared_ptr<int>(42);
+    auto p = make_rcu_ptr<int>(42);
 
     std::thread t1{[&p]() {
         executeInLoop<10000>([&p]() {
@@ -36,7 +36,7 @@ void test_read_overwrite() {
 }
 
 void test_read_update() {
-    auto p = make_versioned_shared_ptr<int>(42);
+    auto p = make_rcu_ptr<int>(42);
 
     std::thread t1{[&p]() {
         executeInLoop<10000>([&p]() {
@@ -53,7 +53,7 @@ void test_read_update() {
 }
 
 void test_overwrite_overwrite() {
-    auto p = versioned_shared_ptr<int>{};
+    auto p = rcu_ptr<int>{};
 
     auto l = [&p]() {
         executeInLoop<10000>([&p]() {
@@ -70,7 +70,7 @@ void test_overwrite_overwrite() {
 }
 
 //void test_read_update() {
-    //auto p = versioned_shared_ptr<int>{};
+    //auto p = rcu_ptr<int>{};
 
     //std::thread t1{[&p]() {
         //executeInLoop<10000>([&p]() {
@@ -88,7 +88,7 @@ void test_overwrite_overwrite() {
 //}
 
 //void test_update_update() {
-    //auto p = versioned_shared_ptr<int>{};
+    //auto p = rcu_ptr<int>{};
     //p.update([](const std::shared_ptr<const int>& v) {
         //return std::make_shared<int>(0);
     //});
@@ -115,7 +115,7 @@ void test_overwrite_overwrite() {
 //}
 
 void test_update_update() {
-    auto p = make_versioned_shared_ptr<int>(0);
+    auto p = make_rcu_ptr<int>(0);
 
     auto l = [&p]() {
         executeInLoop<10000>([&p]() {
@@ -135,7 +135,7 @@ void test_update_update() {
 
 void test_update_push_back() {
     using V = std::vector<int>;
-    auto p = make_versioned_shared_ptr<V>();
+    auto p = make_rcu_ptr<V>();
     const int i = 2;
 
     auto l = [&p, &i]() {
@@ -157,7 +157,7 @@ void test_update_push_back() {
 }
 
 void test_read_read() {
-    auto p = make_versioned_shared_ptr<int>(42);
+    auto p = make_rcu_ptr<int>(42);
 
     auto l = [&p]() { executeInLoop<10000>([&p]() { auto& x = *p.read(); }); };
     std::thread t1{l};
@@ -168,10 +168,10 @@ void test_read_read() {
 }
 
 void test_assign_overwrite() {
-    auto p = versioned_shared_ptr<int>{};
+    auto p = rcu_ptr<int>{};
 
     std::thread t2{[&p]() {
-        executeInLoop<10000>([&p]() { p = versioned_shared_ptr<int>{}; });
+        executeInLoop<10000>([&p]() { p = rcu_ptr<int>{}; });
     }};
 
     std::thread t1{[&p]() {
@@ -186,7 +186,7 @@ void test_assign_overwrite() {
 }
 
 void test_copyctor_overwrite() {
-    auto p = versioned_shared_ptr<int>{};
+    auto p = rcu_ptr<int>{};
 
     std::thread t2{[&p]() { executeInLoop<10000>([&p]() { auto p2 = p; }); }};
 
@@ -202,12 +202,12 @@ void test_copyctor_overwrite() {
 }
 
 void test_copyctor_assign() {
-    auto p = versioned_shared_ptr<int>{};
+    auto p = rcu_ptr<int>{};
 
     std::thread t1{[&p]() { executeInLoop<10000>([&p]() { auto p2 = p; }); }};
 
     std::thread t2{[&p]() {
-        executeInLoop<10000>([&p]() { p = versioned_shared_ptr<int>{}; });
+        executeInLoop<10000>([&p]() { p = rcu_ptr<int>{}; });
     }};
 
     t1.join();
