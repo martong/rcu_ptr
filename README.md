@@ -2,8 +2,8 @@
 
 ## Introduction
 Read-copy-update pointer (`rcu_ptr`) is a special smart pointer which can be used to exchange data between threads.
-Read-copy-update (RCU) is a general synhronization mechanism, which is similar to readers-writers lock.
-It allows extremely low overhead for reads. However, RCU updates can be expensive, as they must leave the old versions of the data structure in place to accommodate pre-existing readers \[[1][1],[2][2]\].
+Read-copy-update (RCU) is a general synchronization mechanism, which is similar to readers-writers lock.
+It allows extremely low overhead for reads. However, RCU updates can be expensive, as they must leave the old versions of the data structure in place to accommodate pre-existing readers \[[1][1], [2][2]\].
 `rcu_ptr` is useful when you have several readers and few writers.
 Depending on the size of the data you want to update, writes can be really slow, since they need to copy.
 Therefore, it's worth to do measurments and analyze the characteristics of the inputs and environment of your system.
