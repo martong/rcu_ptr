@@ -1,27 +1,16 @@
 # rcu_ptr
 
-### Prerequisites
+## Introduction
+Read-copy-update pointer (`rcu_ptr`) is a special smart pointer which can be used to exchange data between threads.
+Read-copy-update (RCU) is a general synhronization mechanism, which is similar to readers-writers lock.
+It allows extremely low overhead for reads. However, RCU updates can be expensive, as they must leave the old versions of the data structure in place to accommodate pre-existing readers \[[1][1],[2][2]\].
+`rcu_ptr` is useful when you have several readers and few writers.
+Depending on the size of the data you want to update, writes can be really slow, since they need to copy.
+Therefore, it's worth to do measurments and analyze the characteristics of the inputs and environment of your system.
 
-`rcu_ptr` depends on the features of the `C++14` standard, furthermore the tests were built with (GNU) `Make` (and with the GNU C++ toolchain) and highly dependent on the `ThreadSanitizer` introduced in GCC 4.8 (it is recommended to use GCC 5.1 or newer though).
+`rcu_ptr` implements the read-copy-update mechanism by wrapping a `std::shared_ptr`; in this manner it is very similar to `std::weak_ptr`.
 
-### Building the library
-
-As of now the library is header only, requires the client to clone the repository and include `rcu_ptr.hpp` to use it (no separate building or linking is required).
-
-### Running the tests
-
-Several tests are included to the project to verify the concept and expected behaviour of the `rcu_ptr`. Each of these are in the subdirectories and building them is quite simple:
-for example building and running the tests for container(s) would require the execution of the following steps
-```bash
-cd container
-make
-./container
-```
-that's it.
-
-
-### Usage
-
+## Why do we need `rcu_ptr`?
 Imagine we have a collection and several reader and some writer threads on it.
 It is a common mistake by some programmers to hold a lock until the collection is iterated on the reader thread.
 Example
@@ -153,14 +142,33 @@ public:
     }
 };
 ```
-The read operation of `rcu_ptr` returns a shared_ptr<const T> by value, therefore it is thread safe.
+The read operation of `rcu_ptr` returns a `shared_ptr<const T>` by value, therefore it is thread safe.
 The `overwrite` operation receives a `const shared_ptr<T>&` which will be the new shared_ptr after the `atomic_compare_exchange` is finished inside.
 The `update` operation receives a lambda which is called whenever an update needs to be done, i.e. it will be called continuously until the update is successful.
 The lambda receives a `const T&` for the actual contained data.
 Consequently, the update operation needs to do a deep copy if it wants to preserve some elements of the original data.
 
-### The Name
+## Usage
+### Prerequisites
 
-Due to research it has been decided to rename `versioned_shared_ptr` to `rcu_ptr` (reflecting its behaviour (Read-Copy Update) of copying the resource on update internally as in the Linux kernel instead of 
-keeping track explicitly of all the existing versions). 
+`rcu_ptr` depends on the features of the `C++14` standard, furthermore the tests were built with (GNU) `Make` (and with the GNU C++ toolchain) and highly dependent on the `ThreadSanitizer` introduced in GCC 4.8 (it is recommended to use GCC 5.1 or newer though).
 
+### Building the library
+
+As of now the library is header only, requires the client to clone the repository and include `rcu_ptr.hpp` to use it (no separate building or linking is required).
+
+### Running the tests
+
+Several tests are included to the project to verify the concept and expected behaviour of the `rcu_ptr`. Each of these are in the subdirectories and building them is quite simple:
+for example building and running the tests for container(s) would require the execution of the following steps:
+```bash
+cd container
+make
+./container
+```
+
+### API
+TODO
+
+[1]: https://lwn.net/Articles/262464/
+[2]: https://en.wikipedia.org/wiki/Read-copy-update
