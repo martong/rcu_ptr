@@ -63,18 +63,19 @@ public:
         }
     }
 
+#if 0
     // This version requires the client to do the copy with make_shared
-    //template <typename R>
-    //void update(R&& fun) {
-        //std::shared_ptr<T> sp_l = std::atomic_load(&sp);
-        //auto exchange_result = false;
-        //while (!exchange_result) {
-            //auto r = std::forward<R>(fun)(std::shared_ptr<const T>(sp_l));
-            //exchange_result =
-                //std::atomic_compare_exchange_strong(&sp, &sp_l, r);
-        //}
-    //}
-
+    template <typename R>
+    void update(R&& fun) {
+        std::shared_ptr<T> sp_l = std::atomic_load(&sp);
+        auto exchange_result = false;
+        while (!exchange_result) {
+            auto r = std::forward<R>(fun)(std::shared_ptr<const T>(sp_l));
+            exchange_result =
+                std::atomic_compare_exchange_strong(&sp, &sp_l, r);
+        }
+    }
+#endif
 };
 
 template <typename T, typename... Args>
