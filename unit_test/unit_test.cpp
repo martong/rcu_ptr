@@ -1,4 +1,4 @@
-#include "../versioned_shared_ptr.hpp"
+#include "../rcu_ptr.hpp"
 #include <cassert>
 #include <iostream>
 
@@ -18,7 +18,7 @@ struct A {
 };
 
 void test() {
-    auto p = versioned_shared_ptr<int>{};
+    auto p = rcu_ptr<int>{};
     auto new_ = std::make_shared<int>(42);
     p.overwrite(new_);
     ASSERT(42 == *p.read());
