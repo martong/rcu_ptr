@@ -151,15 +151,15 @@ Consequently, the update operation needs to do a deep copy if it wants to preser
 ## Usage
 ### Prerequisites
 
-`rcu_ptr` depends on the features of the `C++14` standard, furthermore the tests were built with (GNU) `Make` (and with the GNU C++ toolchain) and highly dependent on the `ThreadSanitizer` introduced in GCC 4.8 (it is recommended to use GCC 5.1 or newer though).
+`rcu_ptr` depends on the features of the `C++14` standard, the tests were built with (GNU) `Make` (and with the GNU C++ toolchain) and dependent on the `ThreadSanitizer` introduced in GCC 4.8.
 
 ### Building the library
 
-As of now the library is header only, requires the client to clone the repository and include `rcu_ptr.hpp` to use it (no separate building or linking is required).
+The library is header only: `rcu_ptr.hpp`.
 
 ### Running the tests
 
-Several tests are included to the project to verify the concept and expected behaviour of the `rcu_ptr`. Each of these are in the subdirectories and building them is quite simple:
+Tests are included to verify the concept and expected behaviour of the `rcu_ptr`. Each of these are in the subdirectories and building them is quite simple:
 for example building and running the tests for container(s) would require the execution of the following steps:
 ```bash
 cd container
@@ -167,8 +167,9 @@ make
 ./container
 ```
 
-### API
-TODO
-
 [1]: https://lwn.net/Articles/262464/
 [2]: https://en.wikipedia.org/wiki/Read-copy-update
+
+### Acknowledgement
+
+Many many thanks for `bucienator` for having all the valuable discussions about the implementation, and the API.
