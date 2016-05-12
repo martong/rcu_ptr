@@ -15,9 +15,7 @@ public:
     rcu_ptr() = default;
 
     // Copy
-    rcu_ptr(const rcu_ptr& rhs) {
-        sp = std::atomic_load(&rhs.sp);
-    }
+    rcu_ptr(const rcu_ptr& rhs) { sp = std::atomic_load(&rhs.sp); }
     rcu_ptr& operator=(const rcu_ptr& rhs) {
         overwrite(rhs.sp);
         return *this;
@@ -35,7 +33,9 @@ public:
 
     ~rcu_ptr() = default;
 
-    std::shared_ptr<const T> read() const { return std::atomic_load(&sp); }
+    std::shared_ptr<const T> read() const {
+        return std::atomic_load_explicit(&sp, std::memory_order_relaxed);
+    }
 
     // Overwrites the content of the wrapped shared_ptr.
     // We don't get any information about the intermediate updates/overwrites.
@@ -43,7 +43,7 @@ public:
     // the old value.
     // E.g. vector.clear()
     void overwrite(const std::shared_ptr<T>& r) {
-        std::atomic_store(&sp, r);
+        std::atomic_store_explicit(&sp, r, std::memory_order_relaxed);
     }
 
     // Updates the content of the wrapped shared_ptr.
@@ -53,13 +53,15 @@ public:
     // E.g. vector.push_back()
     template <typename R>
     void update(R&& fun) {
-        std::shared_ptr<T> sp_l = std::atomic_load(&sp);
+        std::shared_ptr<T> sp_l =
+            std::atomic_load_explicit(&sp, std::memory_order_consume);
         auto exchange_result = false;
         while (!exchange_result) {
             T new_ = std::forward<R>(fun)(static_cast<const T&>(*sp_l));
             auto r = std::make_shared<T>(std::move(new_));
-            exchange_result =
-                std::atomic_compare_exchange_strong(&sp, &sp_l, r);
+            exchange_result = std::atomic_compare_exchange_strong_explicit(
+                &sp, &sp_l, r, std::memory_order_release,
+                std::memory_order_release);
         }
     }
 
