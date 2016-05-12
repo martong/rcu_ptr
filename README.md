@@ -172,4 +172,4 @@ make
 
 ### Acknowledgement
 
-Many many thanks for `bucienator` for having all the valuable discussions about the implementation, and the API.
+Many many thanks to `bucienator` for having all the valuable discussions about the implementation, and the API.
