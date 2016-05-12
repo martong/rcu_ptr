@@ -8,7 +8,7 @@ It allows extremely low overhead for reads. However, RCU updates can be expensiv
 Depending on the size of the data you want to update, writes can be really slow, since they need to copy.
 Therefore, it's worth to do measurments and analyze the characteristics of the inputs and environment of your system.
 
-`rcu_ptr` implements the read-copy-update mechanism by wrapping a `std::shared_ptr`; in this manner it is very similar to `std::weak_ptr`.
+`rcu_ptr` implements the read-copy-update mechanism by wrapping a `std::shared_ptr`; in a way, it has some similarity to `std::weak_ptr`.
 
 ## Why do we need `rcu_ptr`?
 Imagine we have a collection and several reader and some writer threads on it.
@@ -172,4 +172,4 @@ make
 
 ### Acknowledgement
 
-Many many thanks to `bucienator` for having all the valuable discussions about the implementation, and the API.
+Many thanks to `bucienator` for having all the valuable discussions about the implementation, and the API.
