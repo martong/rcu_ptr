@@ -114,7 +114,6 @@
 
 class X {
     rcu_ptr<std::vector<int>> v;
-
 public:
     X() { v.overwrite(std::make_shared<std::vector<int>>()); }
     int sum() const { // read operation
