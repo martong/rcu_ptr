@@ -5,6 +5,7 @@
 #include "../versioned_shared_ptr.hpp"
 #include "../race_test/ExecuteInLoop.hpp"
 #include <thread>
+#include <iostream>
 
 #define ASSERT(CONDITION)                                                      \
   do                                                                           \
@@ -30,6 +31,36 @@
     //}
 //};
 
+// RACE on the pointee:
+//class X {
+    //std::shared_ptr<std::vector<int>> v;
+    //mutable std::mutex m;
+//public:
+    //X() : v(std::make_shared<std::vector<int>>()) {}
+    //int sum() const { // read operation
+        //std::shared_ptr<std::vector<int>> local_copy;
+        //{
+            //std::lock_guard<std::mutex> lock{m};
+            //local_copy = v;
+        //}
+        //return std::accumulate(local_copy->begin(), local_copy->end(), 0);
+    //}
+    //void add(int i) { // write operation
+        //std::shared_ptr<std::vector<int>> local_copy;
+        //{
+            //std::lock_guard<std::mutex> lock{m};
+            //local_copy = v;
+        //}
+        //local_copy->push_back(i);
+        //{
+            //std::lock_guard<std::mutex> lock{m};
+            //v = local_copy;
+        //}
+    //}
+//};
+
+// if there are two concurrent write operations than we might miss one update,
+// assert will fail
 //class X {
     //std::shared_ptr<std::vector<int>> v;
     //mutable std::mutex m;
@@ -83,7 +114,6 @@
 
 class X {
     versioned_shared_ptr<std::vector<int>> v;
-
 public:
     X() { v.overwrite(std::make_shared<std::vector<int>>()); }
     int sum() const { // read operation
@@ -124,6 +154,7 @@ void test_sum_add() {
     t1.join();
     t2.join();
     t3.join();
+    std::cout << x.sum() << std::endl;
     ASSERT(x.sum() == 7000);
 }
 
