@@ -46,18 +46,6 @@ public:
         std::atomic_store(&sp, r);
     }
 
-    // This version requires the client to do the copy with make_shared
-    //template <typename R>
-    //void update(R&& fun) {
-        //std::shared_ptr<T> sp_l = std::atomic_load(&sp);
-        //auto exchange_result = false;
-        //while (!exchange_result) {
-            //auto r = std::forward<R>(fun)(std::shared_ptr<const T>(sp_l));
-            //exchange_result =
-                //std::atomic_compare_exchange_strong(&sp, &sp_l, r);
-        //}
-    //}
-
     // Updates the content of the wrapped shared_ptr.
     // We do get information about the intermediate updates/overwrites.
     // We can use it to update the wrapped data to a new value dependent from
@@ -74,6 +62,18 @@ public:
                 std::atomic_compare_exchange_strong(&sp, &sp_l, r);
         }
     }
+
+    // This version requires the client to do the copy with make_shared
+    //template <typename R>
+    //void update(R&& fun) {
+        //std::shared_ptr<T> sp_l = std::atomic_load(&sp);
+        //auto exchange_result = false;
+        //while (!exchange_result) {
+            //auto r = std::forward<R>(fun)(std::shared_ptr<const T>(sp_l));
+            //exchange_result =
+                //std::atomic_compare_exchange_strong(&sp, &sp_l, r);
+        //}
+    //}
 
 };
 
