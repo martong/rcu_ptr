@@ -139,7 +139,7 @@ public:
         return std::accumulate(local_copy->begin(), local_copy->end(), 0);
     }
     void add(int i) { // write operation
-        v.update([i](std::vector<int>* copy) {
+        v.copy_update([i](std::vector<int>* copy) {
             copy->push_back(i);
         });
     }
