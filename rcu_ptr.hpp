@@ -61,8 +61,13 @@ public:
             std::atomic_load_explicit(&sp, std::memory_order_consume);
         auto exchange_result = false;
         while (!exchange_result) {
-            T new_ = std::forward<R>(fun)(static_cast<const T&>(*sp_l));
-            auto r = std::make_shared<T>(std::move(new_));
+
+            // deep copy
+            auto r = std::make_shared<T>(*sp_l);
+
+            // update
+            std::forward<R>(fun)(r.get());
+
             exchange_result = std::atomic_compare_exchange_strong_explicit(
                 &sp, &sp_l, r, std::memory_order_release,
                 std::memory_order_release);

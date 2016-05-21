@@ -41,8 +41,8 @@ void test_read_copy_update() {
 
     std::thread t1{[&p]() {
         executeInLoop<10000>([&p]() {
-            p.copy_update([](int) {
-                return 42;
+            p.copy_update([](auto cp) {
+                *cp = 42;
             });
         });
     }};
@@ -120,8 +120,8 @@ void test_copy_update_copy_update() {
 
     auto l = [&p]() {
         executeInLoop<10000>([&p]() {
-            p.copy_update([](int v) {
-                return ++v;
+            p.copy_update([](auto copy) {
+                (*copy)++;
             });
         });
     };
@@ -141,10 +141,8 @@ void test_copy_update_push_back() {
 
     auto l = [&p, &i]() {
         executeInLoop<1000>([&p, &i]() {
-            p.copy_update([&i](const V& v) {
-                auto new_ = v;
-                new_.push_back(i);
-                return new_;
+            p.copy_update([&i](auto copy) {
+                copy->push_back(i);
             });
         });
     };
@@ -224,10 +222,8 @@ public:
         return std::accumulate(local_copy->begin(), local_copy->end(), 0);
     }
     void add(int i) { // write operation
-        v.copy_update([i](const std::vector<int>& v) {
-            auto new_ = v;
-            new_.push_back(i);
-            return new_;
+        v.copy_update([i](auto copy) {
+            copy->push_back(i);
         });
     }
 };
