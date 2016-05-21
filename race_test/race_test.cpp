@@ -36,12 +36,12 @@ void test_read_overwrite() {
     t1.join();
 }
 
-void test_read_update() {
+void test_read_copy_update() {
     auto p = make_rcu_ptr<int>(42);
 
     std::thread t1{[&p]() {
         executeInLoop<10000>([&p]() {
-            p.update([](int) {
+            p.copy_update([](int) {
                 return 42;
             });
         });
@@ -115,12 +115,12 @@ void test_overwrite_overwrite() {
     //ASSERT(*p.read() == 20000);
 //}
 
-void test_update_update() {
+void test_copy_update_copy_update() {
     auto p = make_rcu_ptr<int>(0);
 
     auto l = [&p]() {
         executeInLoop<10000>([&p]() {
-            p.update([](int v) {
+            p.copy_update([](int v) {
                 return ++v;
             });
         });
@@ -134,14 +134,14 @@ void test_update_update() {
     ASSERT(*p.read() == 20000);
 }
 
-void test_update_push_back() {
+void test_copy_update_push_back() {
     using V = std::vector<int>;
     auto p = make_rcu_ptr<V>();
     const int i = 2;
 
     auto l = [&p, &i]() {
         executeInLoop<1000>([&p, &i]() {
-            p.update([&i](const V& v) {
+            p.copy_update([&i](const V& v) {
                 auto new_ = v;
                 new_.push_back(i);
                 return new_;
@@ -224,7 +224,7 @@ public:
         return std::accumulate(local_copy->begin(), local_copy->end(), 0);
     }
     void add(int i) { // write operation
-        v.update([i](const std::vector<int>& v) {
+        v.copy_update([i](const std::vector<int>& v) {
             auto new_ = v;
             new_.push_back(i);
             return new_;
@@ -263,10 +263,10 @@ void test_sum_add() {
 
 int main() {
     test_read_overwrite();
-    test_read_update();
+    test_read_copy_update();
     test_overwrite_overwrite();
-    test_update_update();
-    test_update_push_back();
+    test_copy_update_copy_update();
+    test_copy_update_push_back();
     test_read_read();
     test_assign_overwrite();
     test_copyctor_overwrite();

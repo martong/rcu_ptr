@@ -56,7 +56,7 @@ public:
     // A call expression with this function is invalid,
     // if T is a non-copyable and non-movable type.
     template <typename R>
-    void update(R&& fun) {
+    void copy_update(R&& fun) {
         std::shared_ptr<T> sp_l =
             std::atomic_load_explicit(&sp, std::memory_order_consume);
         auto exchange_result = false;
@@ -72,7 +72,7 @@ public:
 #if 0
     // This version requires the client to do the copy with make_shared
     template <typename R>
-    void update(R&& fun) {
+    void copy_update(R&& fun) {
         std::shared_ptr<T> sp_l = std::atomic_load(&sp);
         auto exchange_result = false;
         while (!exchange_result) {
