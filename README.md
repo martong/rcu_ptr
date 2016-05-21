@@ -13,8 +13,7 @@ Therefore, it's worth to do measurments and analyze the characteristics of the i
 ## atomic_shared_ptr
 `rcu_ptr` relies on the free [atomic_...](http://en.cppreference.com/w/cpp/memory/shared_ptr/atomic) function overloads for `std::shared_ptr`. Would be nice to use an [atomic_shared_ptr](http://en.cppreference.com/w/cpp/experimental/atomic_shared_ptr), but currently that is still in experimental phase.
 We use atomic shared_ptr operations which are implemented in terms of a spin-lock (most probably that's how it is implemented in the currently available standard libraries).
-Having a lock-free atomic_shared_ptr would be really benefitial. However, implementing a lock-free atomic_shared_ptr in a portable way can have extreme difficulties [(Michael McCarty, Implementing A Lock-free
-atomic_shared_ptr, CppNow 2016)](https://github.com/brycelelbach/cppnow_presentations_2016/blob/master/01_wednesday/implementing_a_lock_free_atomic_shared_ptr.pdf). Thought it might be easier on architectures, where we have double word CAS operations.
+Having a lock-free atomic_shared_ptr would be really benefitial. However, implementing a lock-free atomic_shared_ptr in a portable way can have extreme difficulties \[[3][3]\]. Thought it might be easier on architectures, where we have double word CAS operations.
 
 ## Why do we need `rcu_ptr`?
 Imagine we have a collection and several reader and some writer threads on it.
@@ -173,6 +172,7 @@ make
 
 [1]: https://lwn.net/Articles/262464/
 [2]: https://en.wikipedia.org/wiki/Read-copy-update
+[3]: https://github.com/brycelelbach/cppnow_presentations_2016/blob/master/01_wednesday/implementing_a_lock_free_atomic_shared_ptr.pdf
 
 ### Acknowledgement
 
