@@ -148,10 +148,10 @@ public:
 The `read` method of `rcu_ptr` returns a `shared_ptr<const T>` by value, therefore it is thread safe.
 The existence of the shared_ptr in the scope enforces that the read object will live at least until this read operation finishes.
 By using the shared_ptr this way, we are free from ABA problems, see [Anthony Williams - Why do we need atomic_shared_ptr?](https://www.justsoftwaresolutions.co.uk/threading/why-do-we-need-atomic_shared_ptr.html).
-The `reset` method receives a `const shared_ptr<T>&` with which we can overwrite the actual contained shared_ptr.
 The `copy_update` method receives a lambda. This lambda is called whenever an update needs to be done, i.e. it will be called continuously until the update is successful.
 The lambda receives a `T*` for the copy of the actual data.
 We can modify the copy of the actual data inside the lambda.
+The `reset` method receives a `const shared_ptr<T>&` with which we can overwrite the actual contained shared_ptr.
 
 ## Usage
 ### Prerequisites
