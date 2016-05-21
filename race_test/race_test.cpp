@@ -1,6 +1,7 @@
 #include "../rcu_ptr.hpp"
 #include "ExecuteInLoop.hpp"
 #include <thread>
+#include <iostream>
 
 #define ASSERT(CONDITION)                                                      \
     do                                                                         \
@@ -214,6 +215,52 @@ void test_copyctor_assign() {
     t2.join();
 }
 
+class X {
+    rcu_ptr<std::vector<int>> v;
+public:
+    X() { v.overwrite(std::make_shared<std::vector<int>>()); }
+    int sum() const { // read operation
+        std::shared_ptr<const std::vector<int>> local_copy = v.read();
+        return std::accumulate(local_copy->begin(), local_copy->end(), 0);
+    }
+    void add(int i) { // write operation
+        v.update([i](const std::vector<int>& v) {
+            auto new_ = v;
+            new_.push_back(i);
+            return new_;
+        });
+    }
+};
+
+void test_sum_add() {
+    X x{};
+
+    int sum = 0;
+    std::thread t2{[&x, &sum]() {
+        executeInLoop<1000>([&x, &sum]() {
+            sum = x.sum();
+        });
+    }};
+
+    std::thread t1{[&x]() {
+        executeInLoop<1000>([&x]() {
+            x.add(3);
+        });
+    }};
+
+    std::thread t3{[&x]() {
+        executeInLoop<1000>([&x]() {
+            x.add(4);
+        });
+    }};
+
+    t1.join();
+    t2.join();
+    t3.join();
+    std::cout << x.sum() << std::endl;
+    ASSERT(x.sum() == 7000);
+}
+
 int main() {
     test_read_overwrite();
     test_read_update();
@@ -224,4 +271,5 @@ int main() {
     test_assign_overwrite();
     test_copyctor_overwrite();
     test_copyctor_assign();
+    test_sum_add();
 }

@@ -7,15 +7,9 @@
 #include <thread>
 #include <iostream>
 
-#define ASSERT(CONDITION)                                                      \
-  do                                                                           \
-    if (!(CONDITION)) {                                                        \
-      printf("Assertion failure %s:%d ASSERT(%s)\n", __FILE__, __LINE__,       \
-             #CONDITION);                                                      \
-      abort();                                                                 \
-    }                                                                          \
-  while (0)
-
+/**
+ * This file contains helper snipets for README.md
+ */
 
 //class X {
     //std::vector<int> v;
@@ -129,35 +123,3 @@ public:
     }
 };
 
-void test_sum_add() {
-    X x{};
-
-    int sum = 0;
-    std::thread t2{[&x, &sum]() {
-        executeInLoop<1000>([&x, &sum]() {
-            sum = x.sum();
-        });
-    }};
-
-    std::thread t1{[&x]() {
-        executeInLoop<1000>([&x]() {
-            x.add(3);
-        });
-    }};
-
-    std::thread t3{[&x]() {
-        executeInLoop<1000>([&x]() {
-            x.add(4);
-        });
-    }};
-
-    t1.join();
-    t2.join();
-    t3.join();
-    std::cout << x.sum() << std::endl;
-    ASSERT(x.sum() == 7000);
-}
-
-int main() {
-    test_sum_add();
-}
