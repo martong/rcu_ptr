@@ -89,7 +89,7 @@ We'd need to check whether the other writer had done an update after the actual 
 If it did then we should load the data again and try to do the update again.
 This leads to the general idea of using an `atomic_compare_exchange` in a while loop.
 So we could use an `atomic_shared_ptr` from C++17, but until then we have to settle for the free funtcion overloads for shared_ptr.
-  
+
 ```c++
 class X {
     std::shared_ptr<std::vector<int>> v;
@@ -134,24 +134,22 @@ class X {
     rcu_ptr<std::vector<int>> v;
 
 public:
-    X() { v.overwrite(std::make_shared<std::vector<int>>()); }
+    X() { v.reset(std::make_shared<std::vector<int>>()); }
     int sum() const { // read operation
         std::shared_ptr<const std::vector<int>> local_copy = v.read();
         return std::accumulate(local_copy->begin(), local_copy->end(), 0);
     }
     void add(int i) { // write operation
-        v.update([i](const std::vector<int>& v) {
-            auto new_ = v;
-            new_.push_back(i);
-            return new_;
+        v.update([i](std::vector<int>* copy) {
+            copy->push_back(i);
         });
     }
 };
 ```
-The read operation of `rcu_ptr` returns a `shared_ptr<const T>` by value, therefore it is thread safe.
-The `overwrite` operation receives a `const shared_ptr<T>&` which will be the new shared_ptr after the `atomic_compare_exchange` is finished inside.
-The `update` operation receives a lambda which is called whenever an update needs to be done, i.e. it will be called continuously until the update is successful.
-The lambda receives a `const T&` for the actual contained data.
+The read method of `rcu_ptr` returns a `shared_ptr<const T>` by value, therefore it is thread safe.
+The `reset` method receives a `const shared_ptr<T>&` which will be the new shared_ptr after the `atomic_compare_exchange` is finished inside.
+The `copy_update` method receives a lambda which is called whenever an update needs to be done, i.e. it will be called continuously until the update is successful.
+The lambda receives a `T*` for the copy of the actual data.
 Consequently, the update operation needs to do a deep copy if it wants to preserve some elements of the original data.
 
 ## Usage

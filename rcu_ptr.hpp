@@ -9,6 +9,7 @@ class rcu_ptr {
     std::shared_ptr<T> sp;
 
 public:
+    // TODO add
     // template <typename Y>
     // rcu_ptr(const std::shared_ptr<Y>& r) {}
 
@@ -19,7 +20,7 @@ public:
         sp = std::atomic_load_explicit(&rhs.sp, std::memory_order_relaxed);
     }
     rcu_ptr& operator=(const rcu_ptr& rhs) {
-        overwrite(rhs.sp);
+        reset(rhs.sp);
         return *this;
     }
 
@@ -41,7 +42,7 @@ public:
     // Overwrites the content of the wrapped shared_ptr.
     // We can use it to reset the wrapped data to a new value independent from
     // the old value. ( e.g. vector.clear() )
-    void overwrite(const std::shared_ptr<T>& r) {
+    void reset(const std::shared_ptr<T>& r) {
         std::atomic_store_explicit(&sp, r, std::memory_order_relaxed);
     }
 
@@ -92,6 +93,6 @@ public:
 template <typename T, typename... Args>
 auto make_rcu_ptr(Args&&... args) {
     auto p = rcu_ptr<T>{};
-    p.overwrite(std::make_shared<T>(std::forward<Args>(args)...));
+    p.reset(std::make_shared<T>(std::forward<Args>(args)...));
     return p;
 }
