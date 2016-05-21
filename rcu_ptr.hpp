@@ -15,7 +15,9 @@ public:
     rcu_ptr() = default;
 
     // Copy
-    rcu_ptr(const rcu_ptr& rhs) { sp = std::atomic_load(&rhs.sp); }
+    rcu_ptr(const rcu_ptr& rhs) {
+        sp = std::atomic_load_explicit(&rhs.sp, std::memory_order_relaxed);
+    }
     rcu_ptr& operator=(const rcu_ptr& rhs) {
         overwrite(rhs.sp);
         return *this;
