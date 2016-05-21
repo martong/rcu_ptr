@@ -106,20 +106,3 @@
     //}
 //};
 
-class X {
-    rcu_ptr<std::vector<int>> v;
-public:
-    X() { v.overwrite(std::make_shared<std::vector<int>>()); }
-    int sum() const { // read operation
-        std::shared_ptr<const std::vector<int>> local_copy = v.read();
-        return std::accumulate(local_copy->begin(), local_copy->end(), 0);
-    }
-    void add(int i) { // write operation
-        v.update([i](const std::vector<int>& v) {
-            auto new_ = v;
-            new_.push_back(i);
-            return new_;
-        });
-    }
-};
-
