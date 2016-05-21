@@ -53,6 +53,8 @@ public:
     // We can use it to update the wrapped data to a new value dependent from
     // the old value.
     // E.g. vector.push_back()
+    //
+    // This will not work on non-copyable and non-movable types.
     template <typename R>
     void update(R&& fun) {
         std::shared_ptr<T> sp_l =
