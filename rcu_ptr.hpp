@@ -55,7 +55,7 @@ public:
     // successful.
     //
     // A call expression with this function is invalid,
-    // if T is a non-copyable and non-movable type.
+    // if T is a non-copyable type.
     template <typename R>
     void copy_update(R&& fun) {
         std::shared_ptr<T> sp_l =
