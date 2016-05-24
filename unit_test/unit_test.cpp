@@ -11,16 +11,10 @@
     }                                                                          \
   while (0)
 
-struct A {
-    int a;
-    int b;
-    int c;
-};
-
 void test() {
     auto p = rcu_ptr<int>{};
     auto new_ = std::make_shared<int>(42);
-    p.overwrite(new_);
+    p.reset(new_);
     ASSERT(42 == *p.read());
 }
 
