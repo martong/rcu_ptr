@@ -17,7 +17,7 @@ Having a lock-free atomic_shared_ptr would be really benefitial. However, implem
 
 ## Why do we need RCU and `rcu_ptr`?
 Imagine we have a collection and several readers and some writer threads on it.
-It is a common way to make the colection thread safe by holding a lock until the iteration is finished (on the reader thread).
+It is a common way to make the collection thread safe by holding a lock until the iteration is finished (on the reader thread).
 Example:
 ```c++
 class X {
