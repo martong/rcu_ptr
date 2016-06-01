@@ -6,7 +6,7 @@
 template <typename T>
 class rcu_ptr {
 
-    std::shared_ptr<T> sp;
+    std::shared_ptr<const T> sp;
 
 public:
     // TODO add
@@ -42,7 +42,7 @@ public:
     // Overwrites the content of the wrapped shared_ptr.
     // We can use it to reset the wrapped data to a new value independent from
     // the old value. ( e.g. vector.clear() )
-    void reset(const std::shared_ptr<T>& r) {
+    void reset(const std::shared_ptr<const T>& r) {
         std::atomic_store_explicit(&sp, r, std::memory_order_relaxed);
     }
 
@@ -58,16 +58,16 @@ public:
     // if T is a non-copyable type.
     template <typename R>
     void copy_update(R&& fun) {
-        std::shared_ptr<T> sp_l =
+        std::shared_ptr<const T> sp_l =
             std::atomic_load_explicit(&sp, std::memory_order_consume);
         auto exchange_result = false;
         while (!exchange_result) {
 
             // deep copy
-            auto r = std::make_shared<T>(*sp_l);
+            auto r = std::make_shared<const T>(*sp_l);
 
             // update
-            std::forward<R>(fun)(r.get());
+            std::forward<R>(fun)(const_cast<T*>(r.get()));
 
             exchange_result = std::atomic_compare_exchange_strong_explicit(
                 &sp, &sp_l, r, std::memory_order_release,
