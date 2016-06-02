@@ -115,8 +115,14 @@ public:
 Also (regarding the write operation), since we are already in a while loop we can use `atomic_compare_exchange_weak`.
 That can result in a performance gain on some platforms.
 See http://stackoverflow.com/questions/25199838/understanding-stdatomiccompare-exchange-weak-in-c11
+Note, we could move construct the 3rd parameter of `atomic_compare_exchange_strong`, therefore we could spare a reference count increment and decrement:
+```c++
+            exchange_result =
+                std::atomic_compare_exchange_strong(&v, &local_copy,
+                                                    std::move(local_deep_copy));
+```
 
-But nothing stops an other programmer (e.g. a naive maintainer of the code years later) to add a new reader operation, like this:
+In the current form of class `X`, nothing stops an other programmer (e.g. a naive maintainer of the code years later) to add a new reader operation, like this:
 ```c++
     int another_sum() const {
         return std::accumulate(v->begin(), v->end(), 0);
