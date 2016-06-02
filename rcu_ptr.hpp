@@ -73,7 +73,7 @@ public:
             // otherwise template type deduction would fail.
             exchange_result = std::atomic_compare_exchange_strong_explicit(
                 &sp, &sp_l, std::shared_ptr<const T>(std::move(r)),
-                std::memory_order_release, std::memory_order_release);
+                std::memory_order_release, std::memory_order_consume);
         }
     }
 
