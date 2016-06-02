@@ -223,7 +223,7 @@ The user had to do the copy with make_shared.
         * It might not be ovious that we do a copy in the background.
         * The signature is not consistent with the other member functions, which are all related to a shared_ptr (e.g. read returns with shared_ptr<T>).
 
-* `void(T*)` We receive a reference to the copied value.
+* `void(T*)` We receive a pointer to the copied value.
     * Pros:
         * Simple
         * Less things to write in user code
