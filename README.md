@@ -259,5 +259,6 @@ make
 
 ### Acknowledgement
 
-Many thanks to `bucienator` for having all the valuable discussions about the implementation, and the public interface.
+Many thanks to `bucienator` for having valuable discussions about the implementation, and the public interface.
+Thanks for Máté Cserna, for his really helpful comments.
 Thanks for Jeff Preshing for his wonderful [blog](http://preshing.com/archives/), and Anthony Williams for his [book](http://www.amazon.com/C-Concurrency-Action-Practical-Multithreading/dp/1933988770).
