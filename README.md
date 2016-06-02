@@ -228,6 +228,7 @@ The user had to do the copy with make_shared.
         * Simple
         * Less things to write in user code
         * The signature is quite consistent with the other member functions, we pass a pointer.
+        * Can handle the case when the contained shared_ptr is a nullptr.
     * Cons:
         * It might not be ovious that we do a copy in the background.
 
