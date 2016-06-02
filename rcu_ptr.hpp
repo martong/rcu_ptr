@@ -64,14 +64,16 @@ public:
         while (!exchange_result) {
 
             // deep copy
-            auto r = std::make_shared<const T>(*sp_l);
+            auto r = std::make_shared<T>(*sp_l);
 
             // update
-            std::forward<R>(fun)(const_cast<T*>(r.get()));
+            std::forward<R>(fun)(r.get());
 
+            // Note, we need to construct a shared_ptr to const,
+            // otherwise template type deduction would fail.
             exchange_result = std::atomic_compare_exchange_strong_explicit(
-                &sp, &sp_l, r, std::memory_order_release,
-                std::memory_order_release);
+                &sp, &sp_l, std::shared_ptr<const T>(std::move(r)),
+                std::memory_order_release, std::memory_order_release);
         }
     }
 
