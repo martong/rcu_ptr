@@ -17,7 +17,7 @@ public:
 
     // Copy
     rcu_ptr(const rcu_ptr& rhs) {
-        sp = std::atomic_load_explicit(&rhs.sp, std::memory_order_relaxed);
+        sp = std::atomic_load_explicit(&rhs.sp, std::memory_order_consume);
     }
     rcu_ptr& operator=(const rcu_ptr& rhs) {
         reset(rhs.sp);
@@ -36,14 +36,14 @@ public:
     ~rcu_ptr() = default;
 
     std::shared_ptr<const T> read() const {
-        return std::atomic_load_explicit(&sp, std::memory_order_relaxed);
+        return std::atomic_load_explicit(&sp, std::memory_order_consume);
     }
 
     // Overwrites the content of the wrapped shared_ptr.
     // We can use it to reset the wrapped data to a new value independent from
     // the old value. ( e.g. vector.clear() )
     void reset(const std::shared_ptr<const T>& r) {
-        std::atomic_store_explicit(&sp, r, std::memory_order_relaxed);
+        std::atomic_store_explicit(&sp, r, std::memory_order_release);
     }
 
     // Updates the content of the wrapped shared_ptr.
