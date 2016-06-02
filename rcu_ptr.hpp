@@ -45,6 +45,10 @@ public:
     void reset(const std::shared_ptr<const T>& r) {
         std::atomic_store_explicit(&sp, r, std::memory_order_release);
     }
+    void reset(std::shared_ptr<const T>&& r) {
+        std::atomic_store_explicit(&sp, std::move(r),
+                                   std::memory_order_release);
+    }
 
     // Updates the content of the wrapped shared_ptr.
     // We can use it to update the wrapped data to a new value which is
