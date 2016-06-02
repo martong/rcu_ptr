@@ -62,9 +62,11 @@ public:
             std::atomic_load_explicit(&sp, std::memory_order_consume);
         auto exchange_result = false;
         while (!exchange_result) {
-
-            // deep copy
-            auto r = std::make_shared<T>(*sp_l);
+            std::shared_ptr<T> r;
+            if (sp_l) {
+                // deep copy
+                r = std::make_shared<T>(*sp_l);
+            }
 
             // update
             std::forward<R>(fun)(r.get());

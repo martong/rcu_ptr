@@ -40,11 +40,8 @@ void test_read_copy_update() {
     auto p = make_rcu_ptr<int>(42);
 
     std::thread t1{[&p]() {
-        executeInLoop<10000>([&p]() {
-            p.copy_update([](auto cp) {
-                *cp = 42;
-            });
-        });
+        executeInLoop<10000>(
+            [&p]() { p.copy_update([](auto cp) { *cp = 42; }); });
     }};
 
     executeInLoop<10000>([&p]() { auto& x = *p.read(); });
@@ -70,60 +67,57 @@ void test_reset_reset() {
     t2.join();
 }
 
-//void test_read_update() {
-    //auto p = rcu_ptr<int>{};
+// void test_read_update() {
+// auto p = rcu_ptr<int>{};
 
-    //std::thread t1{[&p]() {
-        //executeInLoop<10000>([&p]() {
-            //p.update([](const std::shared_ptr<const int>& v) {
-                //auto v2 = std::make_shared<int>(42);
-                //return v2;
-            //});
-        //});
-    //}};
+// std::thread t1{[&p]() {
+// executeInLoop<10000>([&p]() {
+// p.update([](const std::shared_ptr<const int>& v) {
+// auto v2 = std::make_shared<int>(42);
+// return v2;
+//});
+//});
+//}};
 
-    //executeInLoop<10000>([&p]() { auto& x = *p.read(); });
+// executeInLoop<10000>([&p]() { auto& x = *p.read(); });
 
-    //t1.join();
-    //ASSERT(*p.read() == 42);
+// t1.join();
+// ASSERT(*p.read() == 42);
 //}
 
-//void test_update_update() {
-    //auto p = rcu_ptr<int>{};
-    //p.update([](const std::shared_ptr<const int>& v) {
-        //return std::make_shared<int>(0);
-    //});
+// void test_update_update() {
+// auto p = rcu_ptr<int>{};
+// p.update([](const std::shared_ptr<const int>& v) {
+// return std::make_shared<int>(0);
+//});
 
-    //std::thread t1{[&p]() {
-        //executeInLoop<10000>([&p]() {
-            //p.update([](const std::shared_ptr<const int>& v) {
-                //return std::make_shared<int>((*v) + 1);
-            //});
-        //});
-    //}};
+// std::thread t1{[&p]() {
+// executeInLoop<10000>([&p]() {
+// p.update([](const std::shared_ptr<const int>& v) {
+// return std::make_shared<int>((*v) + 1);
+//});
+//});
+//}};
 
-    //std::thread t2{[&p]() {
-        //executeInLoop<10000>([&p]() {
-            //p.update([](const std::shared_ptr<const int>& v) {
-                //return std::make_shared<int>((*v) + 1);
-            //});
-        //});
-    //}};
+// std::thread t2{[&p]() {
+// executeInLoop<10000>([&p]() {
+// p.update([](const std::shared_ptr<const int>& v) {
+// return std::make_shared<int>((*v) + 1);
+//});
+//});
+//}};
 
-    //t1.join();
-    //t2.join();
-    //ASSERT(*p.read() == 20000);
+// t1.join();
+// t2.join();
+// ASSERT(*p.read() == 20000);
 //}
 
 void test_copy_update_copy_update() {
     auto p = make_rcu_ptr<int>(0);
 
     auto l = [&p]() {
-        executeInLoop<10000>([&p]() {
-            p.copy_update([](auto copy) {
-                (*copy)++;
-            });
-        });
+        executeInLoop<10000>(
+            [&p]() { p.copy_update([](auto copy) { (*copy)++; }); });
     };
 
     std::thread t1{l};
@@ -141,9 +135,7 @@ void test_copy_update_push_back() {
 
     auto l = [&p, &i]() {
         executeInLoop<1000>([&p, &i]() {
-            p.copy_update([&i](auto copy) {
-                copy->push_back(i);
-            });
+            p.copy_update([&i](auto copy) { copy->push_back(i); });
         });
     };
 
@@ -169,9 +161,8 @@ void test_read_read() {
 void test_assign_reset() {
     auto p = rcu_ptr<int>{};
 
-    std::thread t2{[&p]() {
-        executeInLoop<10000>([&p]() { p = rcu_ptr<int>{}; });
-    }};
+    std::thread t2{
+        [&p]() { executeInLoop<10000>([&p]() { p = rcu_ptr<int>{}; }); }};
 
     std::thread t1{[&p]() {
         executeInLoop<10000>([&p]() {
@@ -205,16 +196,37 @@ void test_copyctor_assign() {
 
     std::thread t1{[&p]() { executeInLoop<10000>([&p]() { auto p2 = p; }); }};
 
-    std::thread t2{[&p]() {
-        executeInLoop<10000>([&p]() { p = rcu_ptr<int>{}; });
-    }};
+    std::thread t2{
+        [&p]() { executeInLoop<10000>([&p]() { p = rcu_ptr<int>{}; }); }};
 
     t1.join();
     t2.join();
 }
 
+void test_uninitialized_rcu_ptr_reset_inside_copy_update() {
+    auto p = rcu_ptr<int>{};
+    auto l = [&p]() {
+        p.copy_update([&p](auto cp) {
+            if (cp == nullptr) {
+                p.reset(std::make_shared<int>(42));
+            } else {
+                (*cp)++;
+            }
+        });
+    };
+    std::thread t1{[l]() { executeInLoop<1000>(l); }};
+    std::thread t2{[l]() { executeInLoop<1000>(l); }};
+
+    t1.join();
+    t2.join();
+
+    std::cout << *p.read() << std::endl;
+    ASSERT(2042 == *p.read());
+}
+
 class X {
     rcu_ptr<std::vector<int>> v;
+
 public:
     X() { v.reset(std::make_shared<std::vector<int>>()); }
     int sum() const { // read operation
@@ -222,9 +234,7 @@ public:
         return std::accumulate(local_copy->begin(), local_copy->end(), 0);
     }
     void add(int i) { // write operation
-        v.copy_update([i](auto copy) {
-            copy->push_back(i);
-        });
+        v.copy_update([i](auto copy) { copy->push_back(i); });
     }
 };
 
@@ -232,23 +242,12 @@ void test_sum_add() {
     X x{};
 
     int sum = 0;
-    std::thread t2{[&x, &sum]() {
-        executeInLoop<1000>([&x, &sum]() {
-            sum = x.sum();
-        });
-    }};
+    std::thread t2{
+        [&x, &sum]() { executeInLoop<1000>([&x, &sum]() { sum = x.sum(); }); }};
 
-    std::thread t1{[&x]() {
-        executeInLoop<1000>([&x]() {
-            x.add(3);
-        });
-    }};
+    std::thread t1{[&x]() { executeInLoop<1000>([&x]() { x.add(3); }); }};
 
-    std::thread t3{[&x]() {
-        executeInLoop<1000>([&x]() {
-            x.add(4);
-        });
-    }};
+    std::thread t3{[&x]() { executeInLoop<1000>([&x]() { x.add(4); }); }};
 
     t1.join();
     t2.join();
@@ -267,5 +266,6 @@ int main() {
     test_assign_reset();
     test_copyctor_reset();
     test_copyctor_assign();
+    test_uninitialized_rcu_ptr_reset_inside_copy_update();
     test_sum_add();
 }
