@@ -237,7 +237,8 @@ At the moment, the last one is the chosen one.
 ## Usage
 ### Prerequisites
 
-`rcu_ptr` depends on the features of the `C++14` standard, the tests were built with (GNU) `Make` (and with the GNU C++ toolchain) and dependent on the `ThreadSanitizer` introduced in GCC 4.8.
+`rcu_ptr` depends on the features of the `C++14` standard, the tests are built with [CMake] (https://cmake.org/) (and with the GNU C++ toolchain) and dependent on the [ThreadSanitizer] (https://code.google.com/archive/p/data-race-test/wikis/ThreadSanitizer.wiki) introduced in GCC 4.8.
+The build procedure is controlled by a convenience tool, the `./cmk` script. Running this script requires [Python] (https://www.python.org/downloads/) 2.7.x to be present in the system.
 
 ### Building the library
 
@@ -246,12 +247,16 @@ The library is header only: `rcu_ptr.hpp`.
 ### Running the tests
 
 Tests are included to verify the concept and expected behaviour of the `rcu_ptr`. Each of these are in the subdirectories and building them is quite simple:
-for example building and running the race_test would require the execution of the following steps:
+
 ```bash
-cd race_test
-make
-./race_test
+# to build & run tests
+./cmk
+./test
 ```
+
+The `Cmk` command line utlity will build the required tests & the `test` script will run all built test binaries. Please note that each test is built with `ThreadSanitizer` (TSan) by default and 
+along with the normal output of each test `TSan` will report errors when data race is detected.
+
 
 [1]: https://lwn.net/Articles/262464/
 [2]: https://en.wikipedia.org/wiki/Read-copy-update
