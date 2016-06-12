@@ -1,0 +1,52 @@
+#!/bin/python2
+#
+# test
+'''
+CommandLine helper for running tests associated with RCU Pointer.
+
+Created on 2016.06.11
+@author cvirtue
+'''
+from os.path import isdir
+import subprocess as sp
+import logging as log
+import sys
+import os
+
+
+def init_logging(log_level=log.INFO):
+  log.basicConfig(format='[%(levelname)s] %(message)s', level=log_level)
+
+
+def run(test_binary):
+  command = [ test_binary, ]
+  exit_status = sp.call(command)
+  return int(exit_status)
+
+
+def exit_on_failure(exit_status):
+  if( exit_status != 0 ):
+    sys.exit(1)
+
+
+def check_dir(dpath, message=''):
+  if not isdir(dpath):
+    error_message = message if message else 'not a directory: %s' % dpath
+    log.error(error_message)
+    sys.exit(1)
+
+
+def main(argc, argv):
+  init_logging()
+  tests_home = './build/bin/tests'
+  check_dir(tests_home, 'tests home is not found - perhaps not built - consult ./cmk -h')
+  tests = os.listdir(tests_home)
+  for test in tests:
+    log.info('running: %s' % test)
+    exit_status = run('/'.join([ tests_home, test ]))
+    exit_on_failure(exit_status)
+
+
+if __name__=='__main__':
+  main(len(sys.argv),sys. argv)
+
