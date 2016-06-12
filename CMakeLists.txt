@@ -3,13 +3,13 @@
 cmake_minimum_required (VERSION 2.8.12.2)
 
 if(${_CRF_SANITIZE_BUILD} STREQUAL "tsan")
-  set (CXX_SANITIZER_FLAGS "-fsanitize=thread -fno-omit-frame-pointer")
+  set (CXX_SANITIZER_FLAGS "-fsanitize=thread -static-libtsan -fno-omit-frame-pointer")
   message ("-- Making ThreadSanitize-d Build")
 elseif(${_CRF_SANITIZE_BUILD} STREQUAL "asan")
   set (CXX_SANITIZER_FLAGS "-fsanitize=address -fno-omit-frame-pointer")
   message ("-- Making AddressSanitize-d Build")
-else(${_CRF_SANITIZE_BUILD} STREQUAL "tsan")
-  set (CXX_SANITIZER_FLAGS "-fsanitize=thread -fno-omit-frame-pointer")
+else(${_CRF_SANITIZE_BUILD} STREQUAL "msan")
+  set (CXX_SANITIZER_FLAGS "-fsanitize=memory -fno-omit-frame-pointer")
 endif(${_CRF_SANITIZE_BUILD} STREQUAL "tsan")
 
 

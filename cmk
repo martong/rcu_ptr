@@ -1,4 +1,4 @@
-#!/bin/python2
+#!/usr/bin/env python
 #
 # cmk
 '''
@@ -37,7 +37,7 @@ class Targets( object ):
 
 def build_type_of(args):
   return( 'Release' if args.release else 'Debug' )
-  
+
 
 def check_file(fpath, message=''):
   if not isfile(fpath):
@@ -56,7 +56,7 @@ def check_dir(dpath, message=''):
 def make_targets(args, config):
   source_dir = '..'
   build_type = build_type_of(args)
-  build_home   = config.setdefault('build_home', './build') 
+  build_home   = config.setdefault('build_home', './build')
   install_home = config.setdefault('install_home', './install')
   install_home = abspath(install_home)
   log.debug('build home:   %s' % build_home)
@@ -127,6 +127,7 @@ def setup_env(args, env):
 
 
 def execute(command):
+  log.debug(' '.join(command))
   exit_status = sp.call(command)
   return int(exit_status)
 
@@ -166,10 +167,10 @@ def config_of(config_file):
 
 
 def main(argc, argv):
-  init_logging()
+  init_logging(log.DEBUG)
   check_platform_support()
   args = args_of(argv[1:])
-  config = config_of(args.config_file) 
+  config = config_of(args.config_file)
 
   targets = make_targets(args, config)
   if args.clean:
