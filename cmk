@@ -156,6 +156,7 @@ def check_platform_support():
 
 def config_of(config_file):
   if not isfile(config_file):
+    log.info('config file does not exists: using defaults')
     return {}
 
   with open(config_file, 'r') as f:
