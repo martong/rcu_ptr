@@ -6,12 +6,13 @@ cmake_minimum_required (VERSION 2.8.12.2)
 # on target platform
 #
 function (set_libtsan_link_flag)
-message ("-- Running on ${CMAKE_SYSTEM_NAME} platform")
-if(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
+message ("-- Compiler ID: ${CMAKE_CXX_COMPILER_ID}")
+message ("-- Compiler Version: ${CMAKE_CXX_COMPILER_VERSION}")
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS "5.3.0")
   set (_CRF_LIBTSAN_LINK_FLAG "-static-libtsan")
-else(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
+else(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS "5.3.0")
   set (_CRF_LIBTSAN_LINK_FALG "")
-endif()
+endif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS "5.3.0")
 endfunction ()
 
 
