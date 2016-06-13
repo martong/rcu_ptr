@@ -79,6 +79,7 @@ def args_of(argv):
   parser.add_argument('-v', '--verbose', action='store_true', help='triggers verbose compilation')
   parser.add_argument('-t', '--toolchain', help='sets the toolchain to build the project with', default='gcc', type=str, choices=supported_toolchains())
   parser.add_argument('--config-file', type=str, default='./cmk.json', help='sets the configuration JSON to be used instead the default - if no file is present the defaults will be used')
+  parser.add_argument('--dry-run', action='store_true', help='triggers a dry run - builds the cmake command and prints it to the standard output but executes not')
 
   mutex_g = parser.add_mutually_exclusive_group()
   mutex_g.add_argument('--asan', action='store_true', help='triggers build for running AddressSanitizer (ASan)')
@@ -97,9 +98,11 @@ def sanitizer_define_of(args):
 
 
 def make_commands(args, targets):
-  binutils_define   = '-D_CMAKE_TOOLCHAIN_PREFIX=llvm-' if ( args.toolchain == 'llvm' ) else ''
-  sanitizer_define  = sanitizer_define_of(args)
-  verbosity_defines = '-DCMAKE_RULE_MESSAGES=OFF -DCMAKE_VERBOSE_MAKEFILE=ON' if args.verbose else ''
+  binutils_define    = '-D_CMAKE_TOOLCHAIN_PREFIX=llvm-' if ( args.toolchain == 'llvm' ) else ''
+  sanitizer_define   = sanitizer_define_of(args)
+  verbosity_defines  = '-DCMAKE_RULE_MESSAGES=OFF -DCMAKE_VERBOSE_MAKEFILE=ON' if args.verbose else ''
+  makefile_generator = 'Unix Makefiles'
+  makefile_generator = '\"%s\"' % makefile_generator if args.dry_run else makefile_generator
   cmake_cmd = [ \
     'cmake', \
     binutils_define, \
@@ -107,9 +110,13 @@ def make_commands(args, targets):
     verbosity_defines, \
     '-DCMAKE_BUILD_TYPE=%s' % targets.build_type, \
     '-D_CRF_INSTALL_HOME=%s' % targets.install_home, \
-    '-G', 'Unix Makefiles', \
+    '-G', makefile_generator, \
     targets.source_dir  \
   ]
+  if args.dry_run:
+    log.info('command: %s' % ' '.join(cmake_cmd))
+    sys.exit(0)
+
   make_cmd  = ['make', ]
   if args.verbose:
     make_cmd.extend([ 'VERBOSE=1', '--no-print-directory' ])
@@ -127,7 +134,7 @@ def setup_env(args, env):
 
 
 def execute(command):
-  log.debug(' '.join(command))
+  log.debug('executing: %s' % ' '.join(command))
   exit_status = sp.call(command)
   return int(exit_status)
 
