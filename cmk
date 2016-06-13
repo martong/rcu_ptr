@@ -149,7 +149,7 @@ def clean_all(targets):
 def check_platform_support():
   # for platform info please see: https://docs.python.org/2/library/sys.html
   platform  = sys.platform
-  supported = [ 'linux2', 'darwin' ]
+  supported = [ 'linux', 'linux2', 'darwin' ]
   if not( platform in supported ):
     log.error('unsupported platform: %s' % platform)
     sys.exit(1)
