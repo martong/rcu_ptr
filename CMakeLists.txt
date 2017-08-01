@@ -18,6 +18,7 @@ endfunction ()
 
 # setup sanitized build
 #
+if(_CRF_SANITIZE_BUILD)
 if(${_CRF_SANITIZE_BUILD} STREQUAL "msan")
   set (CXX_SANITIZER_FLAGS "-fsanitize=memory -fno-omit-frame-pointer")
   message ("-- Making MemorySanitize-d Build")
@@ -29,11 +30,12 @@ else(${_CRF_SANITIZE_BUILD} STREQUAL "msan")
   set (CXX_SANITIZER_FLAGS "-fsanitize=thread ${_CRF_LIBTSAN_LINK_FLAG} -fno-omit-frame-pointer")
   message ("-- Making ThreadSanitize-d Build")
 endif(${_CRF_SANITIZE_BUILD} STREQUAL "msan")
+endif()
 
 
 set (CXX_STANDARD "-std=c++14")
 set (CXX_COMMON_FLAGS "${CXX_STANDARD} -Wall -Wextra -Wdeprecated -pedantic ${CXX_SANITIZER_FLAGS}")
-set (CMAKE_CXX_FLAGS_DEBUG "${CXX_COMMON_FLAGS} -O0 -ggdb")
+set (CMAKE_CXX_FLAGS_DEBUG "${CXX_COMMON_FLAGS} -O0 -ggdb3")
 set (CMAKE_CXX_FLAGS_RELEASE "${CXX_COMMON_FLAGS} -O3")
 include_directories ("${PROJECT_SOURCE_DIR}")
 
