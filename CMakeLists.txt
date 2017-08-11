@@ -39,6 +39,7 @@ set (CMAKE_CXX_FLAGS_DEBUG "${CXX_COMMON_FLAGS} -O0 -ggdb3")
 set (CMAKE_CXX_FLAGS_RELEASE "${CXX_COMMON_FLAGS} -O3")
 include_directories ("${PROJECT_SOURCE_DIR}")
 
+add_subdirectory (googletest)
 add_subdirectory (unit_test)
 add_subdirectory (race_test)
 add_subdirectory (tests)
