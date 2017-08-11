@@ -171,11 +171,17 @@ using CASFnVec = std::vector<CASFunction>;
 
 CASFnVec const CASFunctions = 
 {
-  CASFunction([](auto &asp, auto &expected, auto desired, auto succ, auto fail)
-              { return asp.compare_exchange_weak(expected, desired, succ, fail); })
+  CASFunction([](auto &asp, auto &&expected, auto desired, auto succ, auto fail)
+              { return asp.compare_exchange_weak(std::forward<decltype(expected)>(expected), desired, succ, fail); })
 
-, CASFunction([](auto &asp, auto &expected, auto desired, auto succ, auto fail)
-              { return asp.compare_exchange_strong(expected, desired, succ, fail); })
+, CASFunction([](auto &asp, auto &&expected, auto desired, auto succ, auto fail)
+              { return asp.compare_exchange_strong(std::forward<decltype(expected)>(expected), desired, succ, fail); })
+
+, CASFunction([](auto &asp, auto &&expected, auto desired, auto succ, auto)
+              { return asp.compare_exchange_weak(std::forward<decltype(expected)>(expected), desired, succ); })
+
+, CASFunction([](auto &asp, auto &&expected, auto desired, auto succ, auto)
+              { return asp.compare_exchange_strong(std::forward<decltype(expected)>(expected), desired, succ); })
 };
 
 
