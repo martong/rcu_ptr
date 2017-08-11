@@ -36,10 +36,12 @@ public:
   { return std::atomic_exchange_explicit(&sptr, desired, order); }
 
   bool compare_exchange_weak(std::shared_ptr<T>& expected, const std::shared_ptr<T>& desired,
-                             std::memory_order success,    std::memory_order failure) noexcept;
+                             std::memory_order success,    std::memory_order failure) noexcept
+  { return std::atomic_compare_exchange_weak_explicit(&sptr, &expected, desired, success, failure); }
 
   bool compare_exchange_weak(std::shared_ptr<T>& expected, std::shared_ptr<T>&& desired,
-                             std::memory_order success,    std::memory_order failure) noexcept;
+                             std::memory_order success,    std::memory_order failure) noexcept
+  { return std::atomic_compare_exchange_weak_explicit(&sptr, &expected, desired, success, failure); }
 
   bool compare_exchange_weak(std::shared_ptr<T>& expected, const std::shared_ptr<T>& desired,
                              std::memory_order order = std::memory_order_seq_cst) noexcept
@@ -51,10 +53,12 @@ public:
 
 
   bool compare_exchange_strong(std::shared_ptr<T>& expected, const std::shared_ptr<T>& desired,
-                               std::memory_order success,    std::memory_order failure) noexcept;
+                               std::memory_order success,    std::memory_order failure) noexcept
+  { return std::atomic_compare_exchange_strong_explicit(&sptr, &expected, desired, success, failure); }
 
   bool compare_exchange_strong(std::shared_ptr<T>& expected, std::shared_ptr<T>&& desired,
-                               std::memory_order success,    std::memory_order failure) noexcept;
+                               std::memory_order success,    std::memory_order failure) noexcept
+  { return std::atomic_compare_exchange_strong_explicit(&sptr, &expected, desired, success, failure); }
 
   bool compare_exchange_strong(std::shared_ptr<T>& expected, const std::shared_ptr<T>& desired,
                                std::memory_order order = std::memory_order_seq_cst) noexcept

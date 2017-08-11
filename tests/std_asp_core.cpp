@@ -2,6 +2,7 @@
 //
 #include <detail/atomic_shared_ptr.hpp>
 #include <gtest/gtest.h>
+#include <functional>
 #include <vector>
 #include <memory>
 #include <tuple>
@@ -108,4 +109,80 @@ INSTANTIATE_TEST_CASE_P( SimpleAtomicOperations
                        , StdAtomicSharedPtrSimpleOps
                        , ::testing::Combine( ::testing::ValuesIn(Sptrs)
                                            , ::testing::ValuesIn(MemoryOrders) ));
+
+
+//
+// Basically a member-fn Pointer..
+//
+using CASFunction = std::function<bool(atomic_shared_ptr<int> &, std::shared_ptr<int>&, std::shared_ptr<int>, std::memory_order, std::memory_order)>;
+
+struct StdAtomicSharedPtrCASOps
+: public ::testing::TestWithParam<std::tuple<
+  std::shared_ptr<int>
+, std::memory_order
+, std::memory_order
+, CASFunction
+>>
+{};
+
+
+TEST_P(StdAtomicSharedPtrCASOps, cas_succeeds)
+{
+  auto const params = GetParam();
+  auto const initial_sptr = std::get<0>(params);
+  auto const succ = std::get<1>(params);
+  auto const fail = std::get<2>(params);
+  auto const CAS = std::get<3>(params);
+
+  atomic_shared_ptr<int> asp(initial_sptr);
+
+  auto const desired = std::make_shared<int>(13);
+  auto expected = initial_sptr;
+  auto const success = CAS(asp, expected, desired, succ, fail);
+  ASSERT_TRUE(success);
+  ASSERT_EQ(expected.get(), initial_sptr.get());
+
+  auto const actual = asp.load();
+  ASSERT_EQ(desired.get(), actual.get());
+}
+
+
+TEST_P(StdAtomicSharedPtrCASOps, cas_fails)
+{
+  auto const params = GetParam();
+  auto const initial_sptr = std::get<0>(params);
+  auto const succ = std::get<1>(params);
+  auto const fail = std::get<2>(params);
+  auto const CAS = std::get<3>(params);
+
+  atomic_shared_ptr<int> asp(initial_sptr);
+
+  auto const desired = std::make_shared<int>(13);
+  auto expected = desired;
+  auto const success = CAS(asp, expected, desired, succ, fail);
+  ASSERT_FALSE(success);
+  ASSERT_EQ(expected.get(), initial_sptr.get());
+
+  auto const actual = asp.load();
+  ASSERT_EQ(expected.get(), actual.get());
+}
+
+using CASFnVec = std::vector<CASFunction>;
+
+CASFnVec const CASFunctions = 
+{
+  CASFunction([](auto &asp, auto &expected, auto desired, auto succ, auto fail)
+              { return asp.compare_exchange_weak(expected, desired, succ, fail); })
+
+, CASFunction([](auto &asp, auto &expected, auto desired, auto succ, auto fail)
+              { return asp.compare_exchange_strong(expected, desired, succ, fail); })
+};
+
+
+INSTANTIATE_TEST_CASE_P( CASOps
+                       , StdAtomicSharedPtrCASOps
+                       , ::testing::Combine( ::testing::ValuesIn(Sptrs)
+                                           , ::testing::ValuesIn(MemoryOrders)
+                                           , ::testing::ValuesIn(MemoryOrders)
+                                           , ::testing::ValuesIn(CASFunctions) ));
 
