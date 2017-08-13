@@ -13,10 +13,15 @@ public:
   ~scoped_thread() noexcept
   { Join(Thr); }
 
+  template< typename F >
+  scoped_thread(F &&Fn)
+  : Thr(std::forward<F>(Fn))
+  {}
+
   scoped_thread(thread_type const&) = delete;
   scoped_thread(scoped_thread const&) = delete;
   scoped_thread(scoped_thread &&Other) noexcept
-  : Thr(std::move(Other.Thr))
+  : scoped_thread(std::move(Other.Thr))
   {}
 
   scoped_thread(thread_type &&Thrd) noexcept

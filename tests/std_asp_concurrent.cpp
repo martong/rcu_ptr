@@ -20,7 +20,7 @@ using StoreOrder = MO;
 using Thread = tools::scoped_thread<std::thread>;
 
 
-struct StdAtomicSharedPtrLoadStores
+struct StdAtomicSharedPtrLoadStoresTest
 : public ::testing::TestWithParam<std::tuple<
   LoadOrder
 , StoreOrder
@@ -28,7 +28,7 @@ struct StdAtomicSharedPtrLoadStores
 {};
 
 
-TEST_P(StdAtomicSharedPtrLoadStores, concurrent_stores_w_loads)
+TEST_P(StdAtomicSharedPtrLoadStoresTest, concurrent_stores_w_loads)
 {
   auto const params  = GetParam();
   auto const load_o  = std::get<0>(params);
@@ -74,9 +74,122 @@ TEST_P(StdAtomicSharedPtrLoadStores, concurrent_stores_w_loads)
 
 
 INSTANTIATE_TEST_CASE_P( Concurrent
-                       , StdAtomicSharedPtrLoadStores
-                       , ::testing::Combine( ::testing::ValuesIn(mo::LoadOrders), ::testing::ValuesIn(mo::StoreOrders) ));
+                       , StdAtomicSharedPtrLoadStoresTest
+                       , ::testing::Combine( ::testing::ValuesIn(mo::LoadOrders)
+                                           , ::testing::ValuesIn(mo::StoreOrders) ));
 
+
+
+using RMWOrder = std::memory_order;
+
+struct StdAtomicSharedPtrReadModifyWriteTest
+: public ::testing::TestWithParam<std::tuple<
+  LoadOrder
+, StoreOrder
+, RMWOrder
+>>
+{
+  using ParamsType = std::tuple<LoadOrder, StoreOrder, RMWOrder>;
+
+  template< typename LF, typename SF, typename RMWF >
+  static void Test(ParamsType const& Params, LF &&LoadFn, SF &&StoreFn, RMWF &&RMWFn)
+  {
+    static auto const N = 2;
+    auto const initial = std::make_shared<int>(13);
+    atomic_shared_ptr<int> asp(initial);
+    std::atomic<bool> go{false};
+
+    auto iterations = 10;
+    auto const load_o  = std::get<0>(Params);
+    auto const store_o = std::get<1>(Params);
+    auto const rmw_o   = std::get<2>(Params);
+
+    auto reader = [&, iterations] () mutable noexcept
+    { while (! go); while (iterations--) LoadFn(asp, load_o); };
+
+    auto writer = [&, iterations] () mutable noexcept
+    { while (! go); while (iterations--) StoreFn(asp, store_o); };
+
+    auto rmw = [&, iterations] () mutable noexcept
+    { while (! go) while (iterations--) RMWFn(asp, rmw_o); };
+    {
+      std::vector<Thread> threads;
+      threads.reserve( N*3 );
+      for( auto i = 0; i < N; i++ )
+      {
+        threads.emplace_back(reader);
+        threads.emplace_back(writer);
+        threads.emplace_back(rmw);
+      }
+      go = true;
+    }
+  }
+};
+
+
+TEST_P(StdAtomicSharedPtrReadModifyWriteTest, load_store_exchange)
+{
+  auto const params = GetParam();
+  Test(params, [] (auto &Asp, auto const LO) mutable noexcept
+               { auto const sptr = Asp.load(LO); ASSERT_TRUE(static_cast<bool>(sptr)); }
+ 
+             , [] (auto &Asp, auto const SO) mutable noexcept
+               { auto const sptr = std::make_shared<int>(21); Asp.store(sptr, SO); }
+
+             , [] (auto &Asp, auto const RMWO) mutable noexcept
+               {
+                 auto const new_ = std::make_shared<int>(31);
+                 auto const prev = Asp.exchange(new_, RMWO);
+                 ASSERT_TRUE(static_cast<bool>(prev)); 
+               });
+}
+
+
+TEST_P(StdAtomicSharedPtrReadModifyWriteTest, load_store_cas_strong)
+{
+  auto const params = GetParam();
+  Test(params, [] (auto &Asp, auto const LO) mutable noexcept
+               { auto const sptr = Asp.load(LO); ASSERT_TRUE(static_cast<bool>(sptr)); }
+ 
+             , [] (auto &Asp, auto const SO) mutable noexcept
+               { auto const sptr = std::make_shared<int>(21); Asp.store(sptr, SO); }
+
+             , [] (auto &Asp, auto const RMWO) mutable noexcept
+               {
+                 auto const desired = std::make_shared<int>(42);
+                 auto expected = Asp.load(RMWO);
+                 do
+                 { ASSERT_TRUE(static_cast<bool>(expected)); }
+                 while (! Asp.compare_exchange_strong(expected, desired, RMWO, RMWO));
+               });
+}
+
+
+TEST_P(StdAtomicSharedPtrReadModifyWriteTest, load_store_cas_weak)
+{
+  auto const params = GetParam();
+  Test(params, [] (auto &Asp, auto const LO) mutable noexcept
+               { auto const sptr = Asp.load(LO); ASSERT_TRUE(static_cast<bool>(sptr)); }
+ 
+             , [] (auto &Asp, auto const SO) mutable noexcept
+               { auto const sptr = std::make_shared<int>(21); Asp.store(sptr, SO); }
+
+             , [] (auto &Asp, auto const RMWO) mutable noexcept
+               {
+                 auto const desired = std::make_shared<int>(42);
+                 auto expected = Asp.load(RMWO);
+                 do
+                 { ASSERT_TRUE(static_cast<bool>(expected)); }
+                 while (! Asp.compare_exchange_weak(expected, desired, RMWO, RMWO));
+               });
+}
+
+
+INSTANTIATE_TEST_CASE_P( ConcurrentRMWOperations
+                       , StdAtomicSharedPtrReadModifyWriteTest
+                       , ::testing::Combine( ::testing::ValuesIn(mo::LoadOrders)
+                                           , ::testing::ValuesIn(mo::StoreOrders)
+                                           , ::testing::ValuesIn(mo::ReadModifyWriteOrders) ));
 
 } // namespace test
 
