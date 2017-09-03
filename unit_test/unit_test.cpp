@@ -12,19 +12,19 @@
     while (0)
 
 void test() {
-    auto p = rcu_ptr<int>{};
+    rcu_ptr<int> p;
     auto new_ = std::make_shared<int>(42);
     p.reset(new_);
     ASSERT(42 == *p.read());
 }
 
 void test_uninitialized_rcu_ptr_calls_with_nullptr() {
-    auto p = rcu_ptr<int>{};
+    rcu_ptr<int> p;
     p.copy_update([](auto cp) { ASSERT(cp == nullptr); });
 }
 
 void test_uninitialized_rcu_ptr_reset_inside_copy_update() {
-    auto p = rcu_ptr<int>{};
+    rcu_ptr<int> p;
     p.copy_update([&p](auto cp) {
         if (cp == nullptr) {
             p.reset(std::make_shared<int>(42));

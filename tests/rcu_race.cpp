@@ -29,7 +29,7 @@ TEST_F(RCUPtrRaceTest, tsan_catches_data_race)
 
 TEST_F(RCUPtrRaceTest, read_reset)
 {
-    auto p = make_rcu_ptr<int>(42);
+    rcu_ptr<int> p(std::make_shared<int>(42));
 
     std::thread t1{[&p]() {
         executeInLoop<10000>([&p]() {
@@ -47,7 +47,7 @@ TEST_F(RCUPtrRaceTest, read_reset)
 
 TEST_F(RCUPtrRaceTest, read_copy_update)
 {
-    auto p = make_rcu_ptr<int>(42);
+    rcu_ptr<int> p(std::make_shared<int>(42));
 
     std::thread t1{[&p]() {
         executeInLoop<10000>(
@@ -67,7 +67,7 @@ TEST_F(RCUPtrRaceTest, read_copy_update)
 
 TEST_F(RCUPtrRaceTest, reset_reset)
 {
-    auto p = rcu_ptr<int>{};
+    rcu_ptr<int> p;
 
     auto l = [&p]() {
         executeInLoop<10000>([&p]() {
@@ -130,7 +130,7 @@ TEST_F(RCUPtrRaceTest, reset_reset)
 
 TEST_F(RCUPtrRaceTest, copy_update_copy_update)
 {
-    auto p = make_rcu_ptr<int>(0);
+    rcu_ptr<int> p(std::make_shared<int>(0));
 
     auto l = [&p]() {
         executeInLoop<10000>(
@@ -151,7 +151,7 @@ TEST_F(RCUPtrRaceTest, copy_update_copy_update)
 TEST_F(RCUPtrRaceTest, copy_update_push_back)
 {
     using V = std::vector<int>;
-    auto p = make_rcu_ptr<V>();
+    rcu_ptr<V> p(std::make_shared<V>());
     const int i = 2;
 
     auto l = [&p, &i]() {
@@ -174,7 +174,7 @@ TEST_F(RCUPtrRaceTest, copy_update_push_back)
 
 TEST_F(RCUPtrRaceTest, read_read)
 {
-    auto p = make_rcu_ptr<int>(42);
+    rcu_ptr<int> p(std::make_shared<int>(42));
 
     auto l = [&p]() { executeInLoop<10000>([&p]()
     { auto& x = *p.read(); (void)x; }); };
@@ -189,10 +189,10 @@ TEST_F(RCUPtrRaceTest, read_read)
 
 TEST_F(RCUPtrRaceTest, assign_reset)
 {
-    auto p = rcu_ptr<int>{};
+    rcu_ptr<int> p;
 
     std::thread t2{
-        [&p]() { executeInLoop<10000>([&p]() { p = rcu_ptr<int>{}; }); }};
+        [&p]() { executeInLoop<10000>([&p]() { p = std::shared_ptr<int>(); }); }};
 
     std::thread t1{[&p]() {
         executeInLoop<10000>([&p]() {
@@ -206,9 +206,10 @@ TEST_F(RCUPtrRaceTest, assign_reset)
 }
 
 
+#if 0
 TEST_F(RCUPtrRaceTest, copyctor_reset)
 {
-    auto p = rcu_ptr<int>{};
+    rcu_ptr<int> p;
 
     std::thread t2{[&p]() { executeInLoop<10000>([&p]()
     { auto const p2 = p; (void)p2; }); }};
@@ -227,7 +228,7 @@ TEST_F(RCUPtrRaceTest, copyctor_reset)
 
 TEST_F(RCUPtrRaceTest, copyctor_assign)
 {
-    auto p = rcu_ptr<int>{};
+    rcu_ptr<int> p;
 
     std::thread t1{[&p]() { executeInLoop<10000>([&p]()
     { auto const p2 = p; (void)p2; }); }};
@@ -238,11 +239,12 @@ TEST_F(RCUPtrRaceTest, copyctor_assign)
     t1.join();
     t2.join();
 }
+#endif
 
 
 TEST_F(RCUPtrRaceTest, empty_rcu_ptr_reset_inside_copy_update)
 {
-    auto p = rcu_ptr<int>{};
+    rcu_ptr<int> p;
     auto l = [&p]() {
         p.copy_update([&p](auto cp) {
             if (cp == nullptr) {
@@ -280,7 +282,7 @@ public:
 
 TEST_F(RCUPtrRaceTest, sum_add)
 {
-    X x{};
+    X x;
 
     int sum = 0;
     std::thread t2{

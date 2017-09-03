@@ -22,7 +22,7 @@ void race() {
 }
 
 void test_read_reset() {
-    auto p = make_rcu_ptr<int>(42);
+    rcu_ptr<int> p(std::make_shared<int>(42));
 
     std::thread t1{[&p]() {
         executeInLoop<10000>([&p]() {
@@ -37,7 +37,7 @@ void test_read_reset() {
 }
 
 void test_read_copy_update() {
-    auto p = make_rcu_ptr<int>(42);
+    rcu_ptr<int> p(std::make_shared<int>(42));
 
     std::thread t1{[&p]() {
         executeInLoop<10000>(
@@ -51,7 +51,7 @@ void test_read_copy_update() {
 }
 
 void test_reset_reset() {
-    auto p = rcu_ptr<int>{};
+    rcu_ptr<int> p;
 
     auto l = [&p]() {
         executeInLoop<10000>([&p]() {
@@ -113,7 +113,7 @@ void test_reset_reset() {
 //}
 
 void test_copy_update_copy_update() {
-    auto p = make_rcu_ptr<int>(0);
+    rcu_ptr<int> p(std::make_shared<int>(0));
 
     auto l = [&p]() {
         executeInLoop<10000>(
@@ -130,7 +130,7 @@ void test_copy_update_copy_update() {
 
 void test_copy_update_push_back() {
     using V = std::vector<int>;
-    auto p = make_rcu_ptr<V>();
+    rcu_ptr<V> p(std::make_shared<V>());
     const int i = 2;
 
     auto l = [&p, &i]() {
@@ -148,7 +148,7 @@ void test_copy_update_push_back() {
 }
 
 void test_read_read() {
-    auto p = make_rcu_ptr<int>(42);
+    rcu_ptr<int> p(std::make_shared<int>(42));
 
     auto l = [&p]() { executeInLoop<10000>([&p]() { auto& x = *p.read(); }); };
     std::thread t1{l};
@@ -159,10 +159,10 @@ void test_read_read() {
 }
 
 void test_assign_reset() {
-    auto p = rcu_ptr<int>{};
+    rcu_ptr<int> p;
 
     std::thread t2{
-        [&p]() { executeInLoop<10000>([&p]() { p = rcu_ptr<int>{}; }); }};
+        [&p]() { executeInLoop<10000>([&p]() { p = std::shared_ptr<int>(); }); }};
 
     std::thread t1{[&p]() {
         executeInLoop<10000>([&p]() {
@@ -175,8 +175,9 @@ void test_assign_reset() {
     t2.join();
 }
 
+#if 0
 void test_copyctor_reset() {
-    auto p = rcu_ptr<int>{};
+    rcu_ptr<int> p;
 
     std::thread t2{[&p]() { executeInLoop<10000>([&p]() { auto p2 = p; }); }};
 
@@ -192,7 +193,7 @@ void test_copyctor_reset() {
 }
 
 void test_copyctor_assign() {
-    auto p = rcu_ptr<int>{};
+    rcu_ptr<int> p;
 
     std::thread t1{[&p]() { executeInLoop<10000>([&p]() { auto p2 = p; }); }};
 
@@ -202,9 +203,10 @@ void test_copyctor_assign() {
     t1.join();
     t2.join();
 }
+#endif
 
 void test_uninitialized_rcu_ptr_reset_inside_copy_update() {
-    auto p = rcu_ptr<int>{};
+    rcu_ptr<int> p;
     auto l = [&p]() {
         p.copy_update([&p](auto cp) {
             if (cp == nullptr) {
@@ -264,8 +266,10 @@ int main() {
     test_copy_update_push_back();
     test_read_read();
     test_assign_reset();
+#if 0
     test_copyctor_reset();
     test_copyctor_assign();
+#endif
     test_uninitialized_rcu_ptr_reset_inside_copy_update();
     test_sum_add();
 }

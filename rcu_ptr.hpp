@@ -1,12 +1,14 @@
 #pragma once
 
+#include <detail/atomic_shared_ptr.hpp>
 #include <memory>
 #include <atomic>
 
 template <typename T>
 class rcu_ptr {
 
-    std::shared_ptr<const T> sp;
+    //std::shared_ptr<const T> sp;
+    detail::__std::atomic_shared_ptr<T> asp;
 
 public:
     // TODO add
@@ -14,40 +16,42 @@ public:
     // rcu_ptr(const std::shared_ptr<Y>& r) {}
 
     rcu_ptr() = default;
+    rcu_ptr(const std::shared_ptr<T>& desired) 
+    : asp(desired)
+    {}
 
-    // Copy
-    rcu_ptr(const rcu_ptr& rhs) {
-        sp = std::atomic_load_explicit(&rhs.sp, std::memory_order_consume);
-    }
-    rcu_ptr& operator=(const rcu_ptr& rhs) {
-        reset(rhs.sp);
-        return *this;
-    }
+    rcu_ptr(std::shared_ptr<T>&& desired)
+    : asp(std::move(desired))
+    {}
+
+    rcu_ptr(const rcu_ptr&) = delete;
+    rcu_ptr &operator= (const rcu_ptr&) = delete;
+
+    void operator= (const std::shared_ptr<T>& desired) 
+    { reset(desired); }
 
     // Move
-    // Move operations are not generated since we provide the copy operations.
+    // Move operations are not generated since we delete the copy operations.
     // However, the syntax like
-    //     auto p = rcu_ptr<int>{};
+    //     auto p = rcu_ptr<T>{};
     // should be supported, therefore delete the move operations explicitly
     // is not an option.
     //     rcu_ptr(rcu_ptr&&) = delete;
     //     rcu_ptr& operator=(rcu_ptr&&) = delete;
 
-    ~rcu_ptr() = default;
-
     std::shared_ptr<const T> read() const {
-        return std::atomic_load_explicit(&sp, std::memory_order_consume);
+        return asp.load(std::memory_order_consume);
     }
 
     // Overwrites the content of the wrapped shared_ptr.
     // We can use it to reset the wrapped data to a new value independent from
     // the old value. ( e.g. vector.clear() )
-    void reset(const std::shared_ptr<const T>& r) {
-        std::atomic_store_explicit(&sp, r, std::memory_order_release);
+    void reset(const std::shared_ptr<T>& r) {
+        asp.store(r, std::memory_order_release);
     }
-    void reset(std::shared_ptr<const T>&& r) {
-        std::atomic_store_explicit(&sp, std::move(r),
-                                   std::memory_order_release);
+
+    void reset(std::shared_ptr<T>&& r) {
+        asp.store(std::move(r), std::memory_order_release);
     }
 
     // Updates the content of the wrapped shared_ptr.
@@ -62,8 +66,7 @@ public:
     // if T is a non-copyable type.
     template <typename R>
     void copy_update(R&& fun) {
-        std::shared_ptr<const T> sp_l =
-            std::atomic_load_explicit(&sp, std::memory_order_consume);
+        std::shared_ptr<T> sp_l = asp.load(std::memory_order_consume);
         auto exchange_result = false;
         while (!exchange_result) {
             std::shared_ptr<T> r;
@@ -77,8 +80,8 @@ public:
 
             // Note, we need to construct a shared_ptr to const,
             // otherwise template type deduction would fail.
-            exchange_result = std::atomic_compare_exchange_strong_explicit(
-                &sp, &sp_l, std::shared_ptr<const T>(std::move(r)),
+            exchange_result = asp.compare_exchange_strong(
+                sp_l, std::move(r),
                 std::memory_order_release, std::memory_order_consume);
         }
     }
@@ -92,15 +95,18 @@ public:
         while (!exchange_result) {
             auto r = std::forward<R>(fun)(std::shared_ptr<const T>(sp_l));
             exchange_result =
-                std::atomic_compare_exchange_strong(&sp, &sp_l, r);
+                asp.compare_exchange_strong(&sp_l, r);
         }
     }
 #endif
 };
 
+#if 0
 template <typename T, typename... Args>
 auto make_rcu_ptr(Args&&... args) {
     auto p = rcu_ptr<T>{};
     p.reset(std::make_shared<T>(std::forward<Args>(args)...));
     return p;
 }
+#endif
+
