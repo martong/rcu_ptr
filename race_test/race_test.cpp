@@ -228,7 +228,7 @@ class X {
     rcu_ptr<std::vector<int>> v;
 
 public:
-    X() { v.reset(std::make_shared<std::vector<int>>()); }
+    X() : v(make_rcu_ptr<std::vector<int>>()) {}
     int sum() const { // read operation
         std::shared_ptr<const std::vector<int>> local_copy = v.read();
         return std::accumulate(local_copy->begin(), local_copy->end(), 0);
