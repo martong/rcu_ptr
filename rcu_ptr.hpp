@@ -20,7 +20,7 @@ public:
         sp = std::atomic_load_explicit(&rhs.sp, std::memory_order_consume);
     }
     rcu_ptr& operator=(const rcu_ptr& rhs) {
-        reset(rhs.sp);
+        reset(std::atomic_load_explicit(&rhs.sp, std::memory_order_consume));
         return *this;
     }
 
