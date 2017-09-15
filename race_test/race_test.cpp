@@ -22,7 +22,7 @@ void race() {
 }
 
 void test_read_reset() {
-    auto p = make_rcu_ptr<int>(42);
+    rcu_ptr<int> p(std::make_shared<int>(42));
 
     std::thread t1{[&p]() {
         executeInLoop<10000>([&p]() {
@@ -31,27 +31,30 @@ void test_read_reset() {
         });
     }};
 
-    executeInLoop<10000>([&p]() { auto& x = *p.read(); });
+    executeInLoop<10000>([&p]() { auto& x = *p.read(); (void)x; });
 
     t1.join();
 }
 
 void test_read_copy_update() {
-    auto p = make_rcu_ptr<int>(42);
+    rcu_ptr<int> p(std::make_shared<int>(42));
 
     std::thread t1{[&p]() {
         executeInLoop<10000>(
             [&p]() { p.copy_update([](auto cp) { *cp = 42; }); });
     }};
 
-    executeInLoop<10000>([&p]() { auto& x = *p.read(); });
+    executeInLoop<10000>([&p]() {
+        auto& x = *p.read();
+        (void)x;
+    });
 
     t1.join();
     ASSERT(*p.read() == 42);
 }
 
 void test_reset_reset() {
-    auto p = rcu_ptr<int>{};
+    rcu_ptr<int> p;
 
     auto l = [&p]() {
         executeInLoop<10000>([&p]() {
@@ -113,7 +116,7 @@ void test_reset_reset() {
 //}
 
 void test_copy_update_copy_update() {
-    auto p = make_rcu_ptr<int>(0);
+    rcu_ptr<int> p(std::make_shared<int>(0));
 
     auto l = [&p]() {
         executeInLoop<10000>(
@@ -130,7 +133,7 @@ void test_copy_update_copy_update() {
 
 void test_copy_update_push_back() {
     using V = std::vector<int>;
-    auto p = make_rcu_ptr<V>();
+    rcu_ptr<V> p(std::make_shared<V>());
     const int i = 2;
 
     auto l = [&p, &i]() {
@@ -148,9 +151,14 @@ void test_copy_update_push_back() {
 }
 
 void test_read_read() {
-    auto p = make_rcu_ptr<int>(42);
+    rcu_ptr<int> p(std::make_shared<int>(42));
 
-    auto l = [&p]() { executeInLoop<10000>([&p]() { auto& x = *p.read(); }); };
+    auto l = [&p]() {
+        executeInLoop<10000>([&p]() {
+            auto& x = *p.read();
+            (void)x;
+        });
+    };
     std::thread t1{l};
     std::thread t2{l};
 
@@ -158,11 +166,15 @@ void test_read_read() {
     t2.join();
 }
 
-void test_assign_reset() {
-    auto p = rcu_ptr<int>{};
+void test_reset_reset2() {
+    rcu_ptr<int> p;
 
-    std::thread t2{
-        [&p]() { executeInLoop<10000>([&p]() { p = rcu_ptr<int>{}; }); }};
+    std::thread t2{[&p]() {
+        executeInLoop<10000>([&p]() {
+            auto new_ = std::make_shared<int>(43);
+            p.reset(new_);
+        });
+    }};
 
     std::thread t1{[&p]() {
         executeInLoop<10000>([&p]() {
@@ -170,41 +182,13 @@ void test_assign_reset() {
             p.reset(new_);
         });
     }};
-
-    t1.join();
-    t2.join();
-}
-
-void test_copyctor_reset() {
-    auto p = rcu_ptr<int>{};
-
-    std::thread t2{[&p]() { executeInLoop<10000>([&p]() { auto p2 = p; }); }};
-
-    std::thread t1{[&p]() {
-        executeInLoop<10000>([&p]() {
-            auto new_ = std::make_shared<int>(42);
-            p.reset(new_);
-        });
-    }};
-
-    t1.join();
-    t2.join();
-}
-
-void test_copyctor_assign() {
-    auto p = rcu_ptr<int>{};
-
-    std::thread t1{[&p]() { executeInLoop<10000>([&p]() { auto p2 = p; }); }};
-
-    std::thread t2{
-        [&p]() { executeInLoop<10000>([&p]() { p = rcu_ptr<int>{}; }); }};
 
     t1.join();
     t2.join();
 }
 
 void test_uninitialized_rcu_ptr_reset_inside_copy_update() {
-    auto p = rcu_ptr<int>{};
+    rcu_ptr<int> p;
     auto l = [&p]() {
         p.copy_update([&p](auto cp) {
             if (cp == nullptr) {
@@ -228,7 +212,7 @@ class X {
     rcu_ptr<std::vector<int>> v;
 
 public:
-    X() : v(make_rcu_ptr<std::vector<int>>()) {}
+    X() : v(std::make_shared<std::vector<int>>()) {}
     int sum() const { // read operation
         std::shared_ptr<const std::vector<int>> local_copy = v.read();
         return std::accumulate(local_copy->begin(), local_copy->end(), 0);
@@ -260,12 +244,10 @@ int main() {
     test_read_reset();
     test_read_copy_update();
     test_reset_reset();
+    test_reset_reset2();
     test_copy_update_copy_update();
     test_copy_update_push_back();
     test_read_read();
-    test_assign_reset();
-    test_copyctor_reset();
-    test_copyctor_assign();
     test_uninitialized_rcu_ptr_reset_inside_copy_update();
     test_sum_add();
 }

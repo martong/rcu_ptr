@@ -14,26 +14,16 @@ public:
     // rcu_ptr(const std::shared_ptr<Y>& r) {}
 
     rcu_ptr() = default;
-
-    // Copy
-    rcu_ptr(const rcu_ptr& rhs) {
-        sp = std::atomic_load_explicit(&rhs.sp, std::memory_order_consume);
-    }
-    rcu_ptr& operator=(const rcu_ptr& rhs) {
-        reset(std::atomic_load_explicit(&rhs.sp, std::memory_order_consume));
-        return *this;
-    }
-
-    // Move
-    // Move operations are not generated since we provide the copy operations.
-    // However, the syntax like
-    //     auto p = rcu_ptr<int>{};
-    // should be supported, therefore delete the move operations explicitly
-    // is not an option.
-    //     rcu_ptr(rcu_ptr&&) = delete;
-    //     rcu_ptr& operator=(rcu_ptr&&) = delete;
-
     ~rcu_ptr() = default;
+
+    rcu_ptr(const rcu_ptr& rhs) = delete;
+    rcu_ptr& operator=(const rcu_ptr& rhs) = delete;
+
+    rcu_ptr(rcu_ptr&&) = delete;
+    rcu_ptr& operator=(rcu_ptr&&) = delete;
+
+    rcu_ptr(const std::shared_ptr<const T>& sp_) : sp(sp_) {}
+    rcu_ptr(std::shared_ptr<const T>&& sp_) : sp(std::move(sp_)) {}
 
     std::shared_ptr<const T> read() const {
         return std::atomic_load_explicit(&sp, std::memory_order_consume);
@@ -97,10 +87,3 @@ public:
     }
 #endif
 };
-
-template <typename T, typename... Args>
-auto make_rcu_ptr(Args&&... args) {
-    auto p = rcu_ptr<T>{};
-    p.reset(std::make_shared<T>(std::forward<Args>(args)...));
-    return p;
-}
