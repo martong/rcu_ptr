@@ -52,11 +52,12 @@ public:
     // if T is a non-copyable type.
     template <typename R>
     void copy_update(R&& fun) {
+
         std::shared_ptr<const T> sp_l =
             std::atomic_load_explicit(&sp, std::memory_order_consume);
-        auto exchange_result = false;
-        while (!exchange_result) {
-            std::shared_ptr<T> r;
+
+        std::shared_ptr<T> r;
+        do {
             if (sp_l) {
                 // deep copy
                 r = std::make_shared<T>(*sp_l);
@@ -65,12 +66,12 @@ public:
             // update
             std::forward<R>(fun)(r.get());
 
+        } while (
             // Note, we need to construct a shared_ptr to const,
             // otherwise template type deduction would fail.
-            exchange_result = std::atomic_compare_exchange_strong_explicit(
+            !std::atomic_compare_exchange_strong_explicit(
                 &sp, &sp_l, std::shared_ptr<const T>(std::move(r)),
-                std::memory_order_release, std::memory_order_consume);
-        }
+                std::memory_order_release, std::memory_order_consume));
     }
 
 #if 0
