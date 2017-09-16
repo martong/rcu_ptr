@@ -12,7 +12,9 @@
     while (0)
 
 void test() {
-    rcu_ptr<int> p{std::make_shared<int>(42)};
+    rcu_ptr<int> p;
+    auto new_ = std::make_shared<int>(42);
+    p.reset(new_);
     ASSERT(42 == *p.read());
 }
 

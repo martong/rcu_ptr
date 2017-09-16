@@ -1,43 +1,72 @@
 #pragma once
 
+#include <detail/atomic_shared_ptr_traits.hpp>
+#include <detail/atomic_shared_ptr.hpp>
 #include <memory>
 #include <atomic>
 
-template <typename T>
+template< 
+  typename T
+, template <typename> class AtomicSharedPtr = detail::__std::atomic_shared_ptr
+, typename ASPTraits = detail::atomic_shared_ptr_traits<AtomicSharedPtr>  >
 class rcu_ptr {
 
-    std::shared_ptr<const T> sp;
+    template< typename _T >
+    using atomic_shared_ptr = typename ASPTraits::template atomic_shared_ptr<_T>;
+
+    atomic_shared_ptr<T> asp;
 
 public:
+    template< typename _T >
+    using shared_ptr   = typename ASPTraits::template shared_ptr<_T>;
+    using element_type = typename shared_ptr<T>::element_type;
+
     // TODO add
     // template <typename Y>
     // rcu_ptr(const std::shared_ptr<Y>& r) {}
 
     rcu_ptr() = default;
-    ~rcu_ptr() = default;
 
-    rcu_ptr(const rcu_ptr& rhs) = delete;
-    rcu_ptr& operator=(const rcu_ptr& rhs) = delete;
+    rcu_ptr(const shared_ptr<T>& desired) 
+    : asp(desired)
+    {}
 
+    rcu_ptr(shared_ptr<T>&& desired)
+    : asp(std::move(desired))
+    {}
+
+    rcu_ptr(const rcu_ptr&) = delete;
+    rcu_ptr &operator= (const rcu_ptr&) = delete;
     rcu_ptr(rcu_ptr&&) = delete;
     rcu_ptr& operator=(rcu_ptr&&) = delete;
 
-    rcu_ptr(const std::shared_ptr<const T>& sp_) : sp(sp_) {}
-    rcu_ptr(std::shared_ptr<const T>&& sp_) : sp(std::move(sp_)) {}
+    ~rcu_ptr() = default;
 
-    std::shared_ptr<const T> read() const {
-        return std::atomic_load_explicit(&sp, std::memory_order_consume);
+    void operator= (const shared_ptr<T>& desired) 
+    { reset(desired); }
+
+    // Move
+    // Move operations are not generated since we delete the copy operations.
+    // However, the syntax like
+    //     auto p = rcu_ptr<T>{};
+    // should be supported, therefore delete the move operations explicitly
+    // is not an option.
+    //     rcu_ptr(rcu_ptr&&) = delete;
+    //     rcu_ptr& operator=(rcu_ptr&&) = delete;
+
+    shared_ptr<const T> read() const {
+        return asp.load(std::memory_order_consume);
     }
 
     // Overwrites the content of the wrapped shared_ptr.
     // We can use it to reset the wrapped data to a new value independent from
     // the old value. ( e.g. vector.clear() )
-    void reset(const std::shared_ptr<const T>& r) {
-        std::atomic_store_explicit(&sp, r, std::memory_order_release);
+    void reset(const shared_ptr<T>& r) {
+        asp.store(r, std::memory_order_release);
     }
-    void reset(std::shared_ptr<const T>&& r) {
-        std::atomic_store_explicit(&sp, std::move(r),
-                                   std::memory_order_release);
+
+    void reset(shared_ptr<T>&& r) {
+        asp.store(std::move(r), std::memory_order_release);
     }
 
     // Updates the content of the wrapped shared_ptr.
@@ -52,26 +81,20 @@ public:
     // if T is a non-copyable type.
     template <typename R>
     void copy_update(R&& fun) {
-
-        std::shared_ptr<const T> sp_l =
-            std::atomic_load_explicit(&sp, std::memory_order_consume);
-
-        std::shared_ptr<T> r;
+        shared_ptr<T> sp_l = asp.load(std::memory_order_consume);
+        shared_ptr<T> r;
         do {
             if (sp_l) {
                 // deep copy
-                r = std::make_shared<T>(*sp_l);
+                r = ASPTraits::template make_shared<T>(*sp_l);
             }
 
             // update
             std::forward<R>(fun)(r.get());
-
-        } while (
-            // Note, we need to construct a shared_ptr to const,
-            // otherwise template type deduction would fail.
-            !std::atomic_compare_exchange_strong_explicit(
-                &sp, &sp_l, std::shared_ptr<const T>(std::move(r)),
-                std::memory_order_release, std::memory_order_consume));
+        }
+        while (! asp.compare_exchange_strong( sp_l, std::move(r),
+                                              std::memory_order_release,
+                                              std::memory_order_consume ));
     }
 
 #if 0
@@ -83,8 +106,9 @@ public:
         while (!exchange_result) {
             auto r = std::forward<R>(fun)(std::shared_ptr<const T>(sp_l));
             exchange_result =
-                std::atomic_compare_exchange_strong(&sp, &sp_l, r);
+                asp.compare_exchange_strong(&sp_l, r);
         }
     }
 #endif
 };
+

@@ -1,18 +1,22 @@
-#include "../rcu_ptr.hpp"
-#include "ExecuteInLoop.hpp"
-#include <thread>
+// rcu_race.cpp
+//
+#include <rcu_ptr.hpp>
+#include <race_test/ExecuteInLoop.hpp>
+
+#include <gtest/gtest.h>
+
 #include <iostream>
+#include <thread>
 
-#define ASSERT(CONDITION)                                                      \
-    do                                                                         \
-        if (!(CONDITION)) {                                                    \
-            printf("Assertion failure %s:%d ASSERT(%s)\n", __FILE__, __LINE__, \
-                   #CONDITION);                                                \
-            abort();                                                           \
-        }                                                                      \
-    while (0)
 
-void race() {
+struct RCUPtrRaceTest
+: public ::testing::Test
+{};
+
+
+#if 0
+TEST_F(RCUPtrRaceTest, tsan_catches_data_race)
+{
     int a;
 
     std::thread t1{[&a]() { executeInLoop<1000>([&a]() { ++a; }); }};
@@ -20,23 +24,29 @@ void race() {
 
     t1.join();
 }
+#endif
 
-void test_read_reset() {
+
+TEST_F(RCUPtrRaceTest, read_reset)
+{
     rcu_ptr<int> p(std::make_shared<int>(42));
 
     std::thread t1{[&p]() {
         executeInLoop<10000>([&p]() {
-            auto new_ = std::make_shared<int>(42);
+            auto const new_ = std::make_shared<int>(42);
             p.reset(new_);
         });
     }};
 
-    executeInLoop<10000>([&p]() { auto& x = *p.read(); (void)x; });
+    executeInLoop<10000>([&p]() 
+    { auto& x = *p.read(); (void)x; });
 
     t1.join();
 }
 
-void test_read_copy_update() {
+
+TEST_F(RCUPtrRaceTest, read_copy_update)
+{
     rcu_ptr<int> p(std::make_shared<int>(42));
 
     std::thread t1{[&p]() {
@@ -44,21 +54,24 @@ void test_read_copy_update() {
             [&p]() { p.copy_update([](auto cp) { *cp = 42; }); });
     }};
 
-    executeInLoop<10000>([&p]() {
-        auto& x = *p.read();
-        (void)x;
-    });
+    executeInLoop<10000>([&p]()
+    { auto& x = *p.read(); (void)x; });
 
     t1.join();
-    ASSERT(*p.read() == 42);
+
+    auto const current = p.read();
+    ASSERT_TRUE(static_cast<bool>(current));
+    ASSERT_EQ(42, *current);
 }
 
-void test_reset_reset() {
+
+TEST_F(RCUPtrRaceTest, reset_reset)
+{
     rcu_ptr<int> p;
 
     auto l = [&p]() {
         executeInLoop<10000>([&p]() {
-            auto new_ = std::make_shared<int>(42);
+            auto const new_ = std::make_shared<int>(42);
             p.reset(new_);
         });
     };
@@ -115,7 +128,8 @@ void test_reset_reset() {
 // ASSERT(*p.read() == 20000);
 //}
 
-void test_copy_update_copy_update() {
+TEST_F(RCUPtrRaceTest, copy_update_copy_update)
+{
     rcu_ptr<int> p(std::make_shared<int>(0));
 
     auto l = [&p]() {
@@ -128,10 +142,14 @@ void test_copy_update_copy_update() {
 
     t1.join();
     t2.join();
-    ASSERT(*p.read() == 20000);
+
+    auto const current = p.read();
+    ASSERT_TRUE(static_cast<bool>(current));
+    ASSERT_EQ(20000, *current);
 }
 
-void test_copy_update_push_back() {
+TEST_F(RCUPtrRaceTest, copy_update_push_back)
+{
     using V = std::vector<int>;
     rcu_ptr<V> p(std::make_shared<V>());
     const int i = 2;
@@ -147,18 +165,20 @@ void test_copy_update_push_back() {
 
     t1.join();
     t2.join();
-    ASSERT(p.read()->size() == 2000);
+
+    auto const current = p.read();
+    ASSERT_TRUE(static_cast<bool>(current));
+    ASSERT_EQ(2000ul, current->size());
 }
 
-void test_read_read() {
+
+TEST_F(RCUPtrRaceTest, read_read)
+{
     rcu_ptr<int> p(std::make_shared<int>(42));
 
-    auto l = [&p]() {
-        executeInLoop<10000>([&p]() {
-            auto& x = *p.read();
-            (void)x;
-        });
-    };
+    auto l = [&p]() { executeInLoop<10000>([&p]()
+    { auto& x = *p.read(); (void)x; }); };
+
     std::thread t1{l};
     std::thread t2{l};
 
@@ -166,20 +186,17 @@ void test_read_read() {
     t2.join();
 }
 
-void test_reset_reset2() {
+
+TEST_F(RCUPtrRaceTest, assign_reset)
+{
     rcu_ptr<int> p;
+
+    std::thread t2{
+        [&p]() { executeInLoop<10000>([&p]() { p = std::shared_ptr<int>(); }); }};
 
     std::thread t1{[&p]() {
         executeInLoop<10000>([&p]() {
-            auto new_ = std::make_shared<int>(43);
-            p.reset(new_);
-        });
-    }};
-
-
-    std::thread t2{[&p]() {
-        executeInLoop<10000>([&p]() {
-            auto new_ = std::make_shared<int>(42);
+            auto const new_ = std::make_shared<int>(42);
             p.reset(new_);
         });
     }};
@@ -188,7 +205,45 @@ void test_reset_reset2() {
     t2.join();
 }
 
-void test_uninitialized_rcu_ptr_reset_inside_copy_update() {
+
+#if 0
+TEST_F(RCUPtrRaceTest, copyctor_reset)
+{
+    rcu_ptr<int> p;
+
+    std::thread t2{[&p]() { executeInLoop<10000>([&p]()
+    { auto const p2 = p; (void)p2; }); }};
+
+    std::thread t1{[&p]() {
+        executeInLoop<10000>([&p]() {
+            auto const new_ = std::make_shared<int>(42);
+            p.reset(new_);
+        });
+    }};
+
+    t1.join();
+    t2.join();
+}
+
+
+TEST_F(RCUPtrRaceTest, copyctor_assign)
+{
+    rcu_ptr<int> p;
+
+    std::thread t1{[&p]() { executeInLoop<10000>([&p]()
+    { auto const p2 = p; (void)p2; }); }};
+
+    std::thread t2{
+        [&p]() { executeInLoop<10000>([&p]() { p = rcu_ptr<int>{}; }); }};
+
+    t1.join();
+    t2.join();
+}
+#endif
+
+
+TEST_F(RCUPtrRaceTest, empty_rcu_ptr_reset_inside_copy_update)
+{
     rcu_ptr<int> p;
     auto l = [&p]() {
         p.copy_update([&p](auto cp) {
@@ -205,15 +260,17 @@ void test_uninitialized_rcu_ptr_reset_inside_copy_update() {
     t1.join();
     t2.join();
 
-    std::cout << *p.read() << std::endl;
-    ASSERT(2042 == *p.read());
+    auto const current = p.read();
+    ASSERT_TRUE(static_cast<bool>(current));
+    std::cout << *current << std::endl;
+    ASSERT_EQ(2042, *current);
 }
 
 class X {
     rcu_ptr<std::vector<int>> v;
 
 public:
-    X() : v(std::make_shared<std::vector<int>>()) {}
+    X() { v.reset(std::make_shared<std::vector<int>>()); }
     int sum() const { // read operation
         std::shared_ptr<const std::vector<int>> local_copy = v.read();
         return std::accumulate(local_copy->begin(), local_copy->end(), 0);
@@ -223,8 +280,9 @@ public:
     }
 };
 
-void test_sum_add() {
-    X x{};
+TEST_F(RCUPtrRaceTest, sum_add)
+{
+    X x;
 
     int sum = 0;
     std::thread t2{
@@ -237,18 +295,8 @@ void test_sum_add() {
     t1.join();
     t2.join();
     t3.join();
+
     std::cout << x.sum() << std::endl;
-    ASSERT(x.sum() == 7000);
+    ASSERT_EQ(7000, x.sum());
 }
 
-int main() {
-    test_read_reset();
-    test_read_copy_update();
-    test_reset_reset();
-    test_reset_reset2();
-    test_copy_update_copy_update();
-    test_copy_update_push_back();
-    test_read_read();
-    test_uninitialized_rcu_ptr_reset_inside_copy_update();
-    test_sum_add();
-}
