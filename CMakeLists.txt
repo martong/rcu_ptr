@@ -18,25 +18,44 @@ endfunction ()
 
 # setup sanitized build
 #
-if(_CRF_SANITIZE_BUILD)
-if(${_CRF_SANITIZE_BUILD} STREQUAL "msan")
-  set (CXX_SANITIZER_FLAGS "-fsanitize=memory -fno-omit-frame-pointer")
+if (_CRF_SANITIZE_BUILD)
+  add_compile_options (-fno-omit-frame-pointer)
+
+if (${_CRF_SANITIZE_BUILD} STREQUAL "msan")
+  add_compile_options (-fsanitize=memory)
   message ("-- Making MemorySanitize-d Build")
-elseif(${_CRF_SANITIZE_BUILD} STREQUAL "asan")
-  set (CXX_SANITIZER_FLAGS "-fsanitize=address -fno-omit-frame-pointer")
+
+elseif (${_CRF_SANITIZE_BUILD} STREQUAL "asan")
+  add_compile_options (-fsanitize=address)
   message ("-- Making AddressSanitize-d Build")
-else(${_CRF_SANITIZE_BUILD} STREQUAL "msan")
+
+else ()
   set_libtsan_link_flag ()
-  set (CXX_SANITIZER_FLAGS "-fsanitize=thread ${_CRF_LIBTSAN_LINK_FLAG} -fno-omit-frame-pointer")
+  add_compile_options (-fsanitize=thread)
+  add_compile_options (${_CRF_LIBTSAN_LINK_FLAG})
   message ("-- Making ThreadSanitize-d Build")
-endif(${_CRF_SANITIZE_BUILD} STREQUAL "msan")
-endif()
+
+endif ()
+endif ()
 
 
-set (CXX_STANDARD "-std=c++14")
-set (CXX_COMMON_FLAGS "${CXX_STANDARD} -Wall -Wextra -Wdeprecated -pedantic ${CXX_SANITIZER_FLAGS}")
-set (CMAKE_CXX_FLAGS_DEBUG "${CXX_COMMON_FLAGS} -O0 -ggdb3")
-set (CMAKE_CXX_FLAGS_RELEASE "${CXX_COMMON_FLAGS} -O3")
+add_compile_options (-std=c++14)
+add_compile_options (-Wall)
+add_compile_options (-Wextra)
+add_compile_options (-Wdeprecated)
+add_compile_options (-pedantic)
+
+
+if (CMAKE_BUILD_TYPE MATCHES Release)
+  add_compile_options (-O3)
+
+else ()
+  add_compile_options (-O0)
+  add_compile_options (-ggdb3)
+
+endif ()
+
+
 include_directories ("${PROJECT_SOURCE_DIR}")
 
 add_subdirectory (googletest)
