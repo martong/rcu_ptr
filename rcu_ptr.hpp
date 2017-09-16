@@ -18,7 +18,8 @@ class rcu_ptr {
 
 public:
     template< typename _T >
-    using shared_ptr = typename ASPTraits::template shared_ptr<_T>;
+    using shared_ptr   = typename ASPTraits::template shared_ptr<_T>;
+    using element_type = typename shared_ptr<T>::element_type;
 
     // TODO add
     // template <typename Y>
