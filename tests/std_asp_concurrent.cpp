@@ -2,6 +2,7 @@
 //
 #include <detail/atomic_shared_ptr.hpp>
 #include <tests/scoped_thread.hpp>
+#include <tests/countdown.hpp>
 #include <tests/orders.hpp>
 
 #include <gtest/gtest.h>
@@ -37,20 +38,20 @@ TEST_P(StdAtomicSharedPtrLoadStoresTest, concurrent_stores_w_loads)
   atomic_shared_ptr<int> asp(std::make_shared<int>(21));
   std::atomic<bool> go{false};
   auto const N = 2;
-  auto Iterations = 100;
+  auto iterations = tools::Countdown{100};
 
-  auto reader = [&go, &asp, Iterations, load_o] () mutable noexcept
+  auto reader = [&go, &asp, iterations, load_o] () mutable noexcept
   {
     while (! go) {/*spin*/}
-    while (Iterations--)
+    while (iterations--)
     { auto const sptr = asp.load(load_o); EXPECT_TRUE(static_cast<bool>(sptr)); }
   };
 
   auto const expected_value = 13;
-  auto writer = [&go, &asp, Iterations, expected_value, store_o] () mutable noexcept
+  auto writer = [&go, &asp, iterations, expected_value, store_o] () mutable noexcept
   {
     while (! go) {/*spin*/}
-    while (Iterations--)
+    while (iterations--)
     {
       auto const sptr = std::make_shared<int>(expected_value);
       asp.store(sptr, store_o);
@@ -99,7 +100,7 @@ struct StdAtomicSharedPtrReadModifyWriteTest
     atomic_shared_ptr<int> asp(initial);
     std::atomic<bool> go{false};
 
-    auto iterations = 10;
+    auto iterations = tools::Countdown{10};
     auto const load_o  = std::get<0>(Params);
     auto const store_o = std::get<1>(Params);
     auto const rmw_o   = std::get<2>(Params);
