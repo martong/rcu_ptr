@@ -36,6 +36,10 @@ public:
 
     rcu_ptr(const rcu_ptr&) = delete;
     rcu_ptr &operator= (const rcu_ptr&) = delete;
+    rcu_ptr(rcu_ptr&&) = delete;
+    rcu_ptr& operator=(rcu_ptr&&) = delete;
+
+    ~rcu_ptr() = default;
 
     void operator= (const shared_ptr<T>& desired) 
     { reset(desired); }
@@ -52,17 +56,6 @@ public:
     shared_ptr<const T> read() const {
         return asp.load(std::memory_order_consume);
     }
-
-    ~rcu_ptr() = default;
-
-    rcu_ptr(const rcu_ptr& rhs) = delete;
-    rcu_ptr& operator=(const rcu_ptr& rhs) = delete;
-
-    rcu_ptr(rcu_ptr&&) = delete;
-    rcu_ptr& operator=(rcu_ptr&&) = delete;
-
-    rcu_ptr(const std::shared_ptr<const T>& sp_) : asp(sp_) {}
-    rcu_ptr(std::shared_ptr<const T>&& sp_) : sp(std::move(sp_)) {}
 
     // Overwrites the content of the wrapped shared_ptr.
     // We can use it to reset the wrapped data to a new value independent from
@@ -87,20 +80,16 @@ public:
     // if T is a non-copyable type.
     template <typename R>
     void copy_update(R&& fun) {
-
-        std::shared_ptr<const T> sp_l =
-            std::atomic_load_explicit(&sp, std::memory_order_consume);
-
-        std::shared_ptr<T> r;
+        shared_ptr<T> sp_l = asp.load(std::memory_order_consume);
+        shared_ptr<T> r;
         do {
             if (sp_l) {
                 // deep copy
-                r = std::make_shared<T>(*sp_l);
+                r = ASPTraits::template make_shared<T>(*sp_l);
             }
 
             // update
             std::forward<R>(fun)(r.get());
-
         }
         while (! asp.compare_exchange_strong( sp_l, std::move(r),
                                               std::memory_order_release,
