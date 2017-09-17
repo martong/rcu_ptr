@@ -1,6 +1,6 @@
-# CMakeLists.txt
-#
 cmake_minimum_required (VERSION 3.2)
+
+include(CTest)
 
 # dispatch linking ThreadSanitizer lib based
 # on target platform
