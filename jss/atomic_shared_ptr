@@ -422,13 +422,6 @@ public:
     
     template<class Y> explicit shared_ptr(const weak_ptr<Y>& r);
 
-    template<class Y> shared_ptr(std::auto_ptr<Y>&& r):
-        ptr(r.get()),
-        header(r.get()?new shared_ptr_header_separate<Y,void>(r.get()):nullptr)
-    {
-        r.release();
-    }
-    
     template <class Y, class D> shared_ptr(std::unique_ptr<Y, D>&& r):
         ptr(r.get()),
         header(
@@ -476,12 +469,6 @@ public:
         return *this;
     }
         
-    template<class Y> shared_ptr& operator=(std::auto_ptr<Y>&& r)
-    {
-        shared_ptr temp(static_cast<std::auto_ptr<Y>&&>(r));
-        swap(temp);
-        return *this;
-    }
     template <class Y, class D> shared_ptr& operator=(std::unique_ptr<Y, D>&& r)
     {
         shared_ptr temp(static_cast<std::unique_ptr<Y>&&>(r));
