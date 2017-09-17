@@ -58,6 +58,11 @@ endif ()
 
 include_directories ("${PROJECT_SOURCE_DIR}")
 add_subdirectory (googletest)
+# Supress all warnings from gtest/gmock
+target_compile_options(gmock PRIVATE -w)
+target_compile_options(gmock_main PRIVATE -w)
+target_compile_options(gtest PRIVATE -w)
+target_compile_options(gtest_main PRIVATE -w)
 
 add_compile_options(-Werror)
 add_subdirectory (tests)
