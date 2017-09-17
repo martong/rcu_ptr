@@ -57,6 +57,7 @@ endif ()
 
 
 include_directories ("${PROJECT_SOURCE_DIR}")
-
 add_subdirectory (googletest)
+
+add_compile_options(-Werror)
 add_subdirectory (tests)
