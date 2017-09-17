@@ -1,6 +1,6 @@
 # CMakeLists.txt
 #
-cmake_minimum_required (VERSION 2.8.12.2)
+cmake_minimum_required (VERSION 3.2)
 
 # dispatch linking ThreadSanitizer lib based
 # on target platform
@@ -62,10 +62,3 @@ add_subdirectory (googletest)
 add_subdirectory (unit_test)
 add_subdirectory (race_test)
 add_subdirectory (tests)
-
-message ("-- Building ${CMAKE_BUILD_TYPE} build")
-message ("-- Installing to ${_CRF_INSTALL_HOME}")
-
-install (DIRECTORY examples/lib DESTINATION "${_CRF_INSTALL_HOME}/include"
-         FILES_MATCHING PATTERN "*.hpp")
-
