@@ -18,7 +18,7 @@ struct StdAtomicSharedPtrCore
 TEST_F(StdAtomicSharedPtrCore, constructible)
 {
   { atomic_shared_ptr<int> asp; }
-  { atomic_shared_ptr<int> asp(std::shared_ptr<int>()); }
+  { atomic_shared_ptr<int> asp(std::shared_ptr<int>{}); }
   { atomic_shared_ptr<int> asp(std::make_shared<int>(13)); }
 }
 
@@ -108,7 +108,7 @@ MOVec const MemoryOrders =
 INSTANTIATE_TEST_CASE_P( SimpleAtomicOperations
                        , StdAtomicSharedPtrSimpleOps
                        , ::testing::Combine( ::testing::ValuesIn(Sptrs)
-                                           , ::testing::ValuesIn(MemoryOrders) ));
+                                           , ::testing::ValuesIn(MemoryOrders) ), );
 
 
 //
@@ -190,5 +190,5 @@ INSTANTIATE_TEST_CASE_P( CASOps
                        , ::testing::Combine( ::testing::ValuesIn(Sptrs)
                                            , ::testing::ValuesIn(MemoryOrders)
                                            , ::testing::ValuesIn(MemoryOrders)
-                                           , ::testing::ValuesIn(CASFunctions) ));
+                                           , ::testing::ValuesIn(CASFunctions) ), );
 

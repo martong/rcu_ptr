@@ -77,7 +77,7 @@ TEST_P(StdAtomicSharedPtrLoadStoresTest, concurrent_stores_w_loads)
 INSTANTIATE_TEST_CASE_P( Concurrent
                        , StdAtomicSharedPtrLoadStoresTest
                        , ::testing::Combine( ::testing::ValuesIn(mo::LoadOrders)
-                                           , ::testing::ValuesIn(mo::StoreOrders) ));
+                                           , ::testing::ValuesIn(mo::StoreOrders) ), );
 
 
 
@@ -105,11 +105,17 @@ struct StdAtomicSharedPtrReadModifyWriteTest
     auto const store_o = std::get<1>(Params);
     auto const rmw_o   = std::get<2>(Params);
 
-    auto reader = [&, iterations] () mutable noexcept
-    { while (! go); while (iterations--) LoadFn(asp, load_o); };
+    auto reader = [&, iterations ]() mutable noexcept {
+        while (!go)
+            ;
+        while (iterations--) LoadFn(asp, load_o);
+    };
 
-    auto writer = [&, iterations] () mutable noexcept
-    { while (! go); while (iterations--) StoreFn(asp, store_o); };
+    auto writer = [&, iterations ]() mutable noexcept {
+        while (!go)
+            ;
+        while (iterations--) StoreFn(asp, store_o);
+    };
 
     auto rmw = [&, iterations] () mutable noexcept
     { while (! go) while (iterations--) RMWFn(asp, rmw_o); };
@@ -190,7 +196,7 @@ INSTANTIATE_TEST_CASE_P( ConcurrentRMWOperations
                        , StdAtomicSharedPtrReadModifyWriteTest
                        , ::testing::Combine( ::testing::ValuesIn(mo::LoadOrders)
                                            , ::testing::ValuesIn(mo::StoreOrders)
-                                           , ::testing::ValuesIn(mo::ReadModifyWriteOrders) ));
+                                           , ::testing::ValuesIn(mo::ReadModifyWriteOrders)),);
 
 } // namespace test
 
