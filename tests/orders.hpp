@@ -20,4 +20,3 @@ std::array<std::memory_order, 5> constexpr ReadModifyWriteOrders = {
      std::memory_order_relaxed}};
 
 } // namespace mo
-

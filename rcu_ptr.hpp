@@ -5,20 +5,21 @@
 #include <memory>
 #include <atomic>
 
-template< 
-  typename T
-, template <typename> class AtomicSharedPtr = detail::__std::atomic_shared_ptr
-, typename ASPTraits = detail::atomic_shared_ptr_traits<AtomicSharedPtr>  >
+template <typename T, template <typename> class AtomicSharedPtr =
+                          detail::__std::atomic_shared_ptr,
+          typename ASPTraits =
+              detail::atomic_shared_ptr_traits<AtomicSharedPtr> >
 class rcu_ptr {
 
-    template< typename _T >
-    using atomic_shared_ptr = typename ASPTraits::template atomic_shared_ptr<_T>;
+    template <typename _T>
+    using atomic_shared_ptr =
+        typename ASPTraits::template atomic_shared_ptr<_T>;
 
     atomic_shared_ptr<T> asp;
 
 public:
-    template< typename _T >
-    using shared_ptr   = typename ASPTraits::template shared_ptr<_T>;
+    template <typename _T>
+    using shared_ptr = typename ASPTraits::template shared_ptr<_T>;
     using element_type = typename shared_ptr<T>::element_type;
 
     // TODO add
@@ -27,32 +28,18 @@ public:
 
     rcu_ptr() = default;
 
-    rcu_ptr(const shared_ptr<T>& desired) 
-    : asp(desired)
-    {}
+    rcu_ptr(const shared_ptr<T>& desired) : asp(desired) {}
 
-    rcu_ptr(shared_ptr<T>&& desired)
-    : asp(std::move(desired))
-    {}
+    rcu_ptr(shared_ptr<T>&& desired) : asp(std::move(desired)) {}
 
     rcu_ptr(const rcu_ptr&) = delete;
-    rcu_ptr &operator= (const rcu_ptr&) = delete;
+    rcu_ptr& operator=(const rcu_ptr&) = delete;
     rcu_ptr(rcu_ptr&&) = delete;
     rcu_ptr& operator=(rcu_ptr&&) = delete;
 
     ~rcu_ptr() = default;
 
-    void operator= (const shared_ptr<T>& desired) 
-    { reset(desired); }
-
-    // Move
-    // Move operations are not generated since we delete the copy operations.
-    // However, the syntax like
-    //     auto p = rcu_ptr<T>{};
-    // should be supported, therefore delete the move operations explicitly
-    // is not an option.
-    //     rcu_ptr(rcu_ptr&&) = delete;
-    //     rcu_ptr& operator=(rcu_ptr&&) = delete;
+    void operator=(const shared_ptr<T>& desired) { reset(desired); }
 
     shared_ptr<const T> read() const {
         return asp.load(std::memory_order_consume);
@@ -91,24 +78,9 @@ public:
 
             // update
             std::forward<R>(fun)(r.get());
-        }
-        while (! asp.compare_exchange_strong( sp_l, std::move(r),
+        } while (!asp.compare_exchange_strong(sp_l, std::move(r),
                                               std::memory_order_release,
-                                              std::memory_order_consume ));
+                                              std::memory_order_consume));
     }
-
-#if 0
-    // This version requires the client to do the copy with make_shared
-    template <typename R>
-    void copy_update(R&& fun) {
-        std::shared_ptr<T> sp_l = std::atomic_load(&sp);
-        auto exchange_result = false;
-        while (!exchange_result) {
-            auto r = std::forward<R>(fun)(std::shared_ptr<const T>(sp_l));
-            exchange_result =
-                asp.compare_exchange_strong(&sp_l, r);
-        }
-    }
-#endif
 };
 
