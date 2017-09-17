@@ -1,7 +1,7 @@
 // rcu_race.cpp
 //
 #include <rcu_ptr.hpp>
-#include <race_test/ExecuteInLoop.hpp>
+#include <tests/ExecuteInLoop.hpp>
 
 #include <gtest/gtest.h>
 

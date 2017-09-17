@@ -59,6 +59,4 @@ endif ()
 include_directories ("${PROJECT_SOURCE_DIR}")
 
 add_subdirectory (googletest)
-add_subdirectory (unit_test)
-add_subdirectory (race_test)
 add_subdirectory (tests)
