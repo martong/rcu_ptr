@@ -1,6 +1,4 @@
-// rcu_race.cpp
-//
-#include <rcu_ptr.hpp>
+#include <tests/rcu_ptr_under_test.hpp>
 #include <tests/ExecuteInLoop.hpp>
 
 #include <gtest/gtest.h>
@@ -23,11 +21,11 @@ TEST_F(RCUPtrRaceTest, tsan_catches_data_race)
 #endif
 
 TEST_F(RCUPtrRaceTest, read_reset) {
-    rcu_ptr<int> p(std::make_shared<int>(42));
+    rcu_ptr_under_test<int> p(asp_traits::make_shared<int>(42));
 
     std::thread t1{[&p]() {
         executeInLoop<10000>([&p]() {
-            auto const new_ = std::make_shared<int>(42);
+            auto const new_ = asp_traits::make_shared<int>(42);
             p.reset(new_);
         });
     }};
@@ -41,7 +39,7 @@ TEST_F(RCUPtrRaceTest, read_reset) {
 }
 
 TEST_F(RCUPtrRaceTest, read_copy_update) {
-    rcu_ptr<int> p(std::make_shared<int>(42));
+    rcu_ptr_under_test<int> p(asp_traits::make_shared<int>(42));
 
     std::thread t1{[&p]() {
         executeInLoop<10000>(
@@ -61,11 +59,11 @@ TEST_F(RCUPtrRaceTest, read_copy_update) {
 }
 
 TEST_F(RCUPtrRaceTest, reset_reset) {
-    rcu_ptr<int> p;
+    rcu_ptr_under_test<int> p;
 
     auto l = [&p]() {
         executeInLoop<10000>([&p]() {
-            auto const new_ = std::make_shared<int>(42);
+            auto const new_ = asp_traits::make_shared<int>(42);
             p.reset(new_);
         });
     };
@@ -78,12 +76,12 @@ TEST_F(RCUPtrRaceTest, reset_reset) {
 }
 
 // void test_read_update() {
-// auto p = rcu_ptr<int>{};
+// auto p = rcu_ptr_under_test<int>{};
 
 // std::thread t1{[&p]() {
 // executeInLoop<10000>([&p]() {
-// p.update([](const std::shared_ptr<const int>& v) {
-// auto v2 = std::make_shared<int>(42);
+// p.update([](const asp_traits::shared_ptr<const int>& v) {
+// auto v2 = asp_traits::make_shared<int>(42);
 // return v2;
 //});
 //});
@@ -96,23 +94,23 @@ TEST_F(RCUPtrRaceTest, reset_reset) {
 //}
 
 // void test_update_update() {
-// auto p = rcu_ptr<int>{};
-// p.update([](const std::shared_ptr<const int>& v) {
-// return std::make_shared<int>(0);
+// auto p = rcu_ptr_under_test<int>{};
+// p.update([](const asp_traits::shared_ptr<const int>& v) {
+// return asp_traits::make_shared<int>(0);
 //});
 
 // std::thread t1{[&p]() {
 // executeInLoop<10000>([&p]() {
-// p.update([](const std::shared_ptr<const int>& v) {
-// return std::make_shared<int>((*v) + 1);
+// p.update([](const asp_traits::shared_ptr<const int>& v) {
+// return asp_traits::make_shared<int>((*v) + 1);
 //});
 //});
 //}};
 
 // std::thread t2{[&p]() {
 // executeInLoop<10000>([&p]() {
-// p.update([](const std::shared_ptr<const int>& v) {
-// return std::make_shared<int>((*v) + 1);
+// p.update([](const asp_traits::shared_ptr<const int>& v) {
+// return asp_traits::make_shared<int>((*v) + 1);
 //});
 //});
 //}};
@@ -123,7 +121,7 @@ TEST_F(RCUPtrRaceTest, reset_reset) {
 //}
 
 TEST_F(RCUPtrRaceTest, copy_update_copy_update) {
-    rcu_ptr<int> p(std::make_shared<int>(0));
+    rcu_ptr_under_test<int> p(asp_traits::make_shared<int>(0));
 
     auto l = [&p]() {
         executeInLoop<10000>(
@@ -143,7 +141,7 @@ TEST_F(RCUPtrRaceTest, copy_update_copy_update) {
 
 TEST_F(RCUPtrRaceTest, copy_update_push_back) {
     using V = std::vector<int>;
-    rcu_ptr<V> p(std::make_shared<V>());
+    rcu_ptr_under_test<V> p(asp_traits::make_shared<V>());
     const int i = 2;
 
     auto l = [&p, &i]() {
@@ -164,7 +162,7 @@ TEST_F(RCUPtrRaceTest, copy_update_push_back) {
 }
 
 TEST_F(RCUPtrRaceTest, read_read) {
-    rcu_ptr<int> p(std::make_shared<int>(42));
+    rcu_ptr_under_test<int> p(asp_traits::make_shared<int>(42));
 
     auto l = [&p]() {
         executeInLoop<10000>([&p]() {
@@ -181,15 +179,15 @@ TEST_F(RCUPtrRaceTest, read_read) {
 }
 
 TEST_F(RCUPtrRaceTest, assign_reset) {
-    rcu_ptr<int> p;
+    rcu_ptr_under_test<int> p;
 
     std::thread t2{[&p]() {
-        executeInLoop<10000>([&p]() { p = std::shared_ptr<int>(); });
+        executeInLoop<10000>([&p]() { p = asp_traits::shared_ptr<int>(); });
     }};
 
     std::thread t1{[&p]() {
         executeInLoop<10000>([&p]() {
-            auto const new_ = std::make_shared<int>(42);
+            auto const new_ = asp_traits::make_shared<int>(42);
             p.reset(new_);
         });
     }};
@@ -201,14 +199,14 @@ TEST_F(RCUPtrRaceTest, assign_reset) {
 #if 0
 TEST_F(RCUPtrRaceTest, copyctor_reset)
 {
-    rcu_ptr<int> p;
+    rcu_ptr_under_test<int> p;
 
     std::thread t2{[&p]() { executeInLoop<10000>([&p]()
     { auto const p2 = p; (void)p2; }); }};
 
     std::thread t1{[&p]() {
         executeInLoop<10000>([&p]() {
-            auto const new_ = std::make_shared<int>(42);
+            auto const new_ = asp_traits::make_shared<int>(42);
             p.reset(new_);
         });
     }};
@@ -220,13 +218,13 @@ TEST_F(RCUPtrRaceTest, copyctor_reset)
 
 TEST_F(RCUPtrRaceTest, copyctor_assign)
 {
-    rcu_ptr<int> p;
+    rcu_ptr_under_test<int> p;
 
     std::thread t1{[&p]() { executeInLoop<10000>([&p]()
     { auto const p2 = p; (void)p2; }); }};
 
     std::thread t2{
-        [&p]() { executeInLoop<10000>([&p]() { p = rcu_ptr<int>{}; }); }};
+        [&p]() { executeInLoop<10000>([&p]() { p = rcu_ptr_under_test<int>{}; }); }};
 
     t1.join();
     t2.join();
@@ -234,11 +232,11 @@ TEST_F(RCUPtrRaceTest, copyctor_assign)
 #endif
 
 TEST_F(RCUPtrRaceTest, empty_rcu_ptr_reset_inside_copy_update) {
-    rcu_ptr<int> p;
+    rcu_ptr_under_test<int> p;
     auto l = [&p]() {
         p.copy_update([&p](auto cp) {
             if (cp == nullptr) {
-                p.reset(std::make_shared<int>(42));
+                p.reset(asp_traits::make_shared<int>(42));
             } else {
                 (*cp)++;
             }
@@ -257,12 +255,12 @@ TEST_F(RCUPtrRaceTest, empty_rcu_ptr_reset_inside_copy_update) {
 }
 
 class X {
-    rcu_ptr<std::vector<int>> v;
+    rcu_ptr_under_test<std::vector<int>> v;
 
 public:
-    X() { v.reset(std::make_shared<std::vector<int>>()); }
+    X() { v.reset(asp_traits::make_shared<std::vector<int>>()); }
     int sum() const { // read operation
-        std::shared_ptr<const std::vector<int>> local_copy = v.read();
+        asp_traits::shared_ptr<const std::vector<int>> local_copy = v.read();
         return std::accumulate(local_copy->begin(), local_copy->end(), 0);
     }
     void add(int i) { // write operation
