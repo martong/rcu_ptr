@@ -238,25 +238,22 @@ At the moment, the last one is the chosen one.
 ### Prerequisites
 
 `rcu_ptr` depends on the features of the `C++14` standard, the tests are built with [CMake] (https://cmake.org/) (and with the GNU C++ toolchain) and dependent on the [ThreadSanitizer] (https://code.google.com/archive/p/data-race-test/wikis/ThreadSanitizer.wiki) introduced in GCC 4.8.
-The build procedure is controlled by a convenience tool, the `./cmk` script. Running this script requires [Python] (https://www.python.org/downloads/) 2.7.x to be present in the system.
 
-### Building the library
+### Building
 
-The library is header only: `rcu_ptr.hpp`.
-
-### Running the tests
-
-Tests are included to verify the concept and expected behaviour of the `rcu_ptr`. Each of these are in the subdirectories and building them is quite simple:
-
+The library is header only: `rcu_ptr.hpp`, thus it requires no build.
+However, tests are included to verify the concept and expected behaviour of the `rcu_ptr`. Each of these are in the subdirectories and building them is quite simple.
 ```bash
-# to build & run tests
-./cmk
-./test
+git clone git@github.com:martong/rcu_ptr.git
+cd rcu_ptr
+git submodule init
+git submodule update
+mkdir build
+cd build
+cmake -G Ninja ..
+ninja
+ctest
 ```
-
-The `Cmk` command line utlity will build the required tests & the `test` script will run all built test binaries. Please note that each test is built with `ThreadSanitizer` (TSan) by default and 
-along with the normal output of each test `TSan` will report errors when data race is detected.
-
 
 [1]: https://lwn.net/Articles/262464/
 [2]: https://en.wikipedia.org/wiki/Read-copy-update
