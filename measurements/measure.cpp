@@ -5,10 +5,13 @@
 #include <numeric>
 #include <tests/rcu_ptr_under_test.hpp>
 #include <thread>
-//#include <unistd.h> // sysconf
 #include <vector>
 
-// inline unsigned cpu_cores() { return sysconf(_SC_NPROCESSORS_ONLN); }
+#include <tbb/queuing_rw_mutex.h>
+
+void f() {
+    tbb::queuing_rw_mutex m;
+}
 
 class XRcuPtr {
     rcu_ptr_under_test<std::vector<int>> v;
@@ -44,13 +47,13 @@ public:
     }
 };
 
-class XMutex {
+class XStdMutex {
     std::vector<int> v;
     const int default_value = 1;
     mutable std::mutex m;
 
 public:
-    XMutex(size_t vec_size) : v(vec_size, default_value) {}
+    XStdMutex(size_t vec_size) : v(vec_size, default_value) {}
 
     int read_one(unsigned index) const {
         std::lock_guard<std::mutex> lock{m};
@@ -69,6 +72,37 @@ public:
     }
     void update_all(int value) {
         std::lock_guard<std::mutex> lock{m};
+        for (auto& e : v) {
+            e = value;
+        }
+    }
+};
+
+class XTbbQueuingRwMutex {
+    std::vector<int> v;
+    const int default_value = 1;
+    mutable tbb::queuing_rw_mutex m;
+
+public:
+    XTbbQueuingRwMutex(size_t vec_size) : v(vec_size, default_value) {}
+
+    int read_one(unsigned index) const {
+        tbb::queuing_rw_mutex::scoped_lock lock{m, false}; // read lock
+        assert(index < v.size());
+        return v[index];
+    }
+    int read_all() const { // sum
+        tbb::queuing_rw_mutex::scoped_lock lock{m, false}; // read lock
+        return std::accumulate(v.begin(), v.end(), 0);
+    }
+
+    void update_one(unsigned index, int value) {
+        tbb::queuing_rw_mutex::scoped_lock lock{m}; // write lock
+        assert(index < v.size());
+        v[index] = value;
+    }
+    void update_all(int value) {
+        tbb::queuing_rw_mutex::scoped_lock lock{m}; // write lock
         for (auto& e : v) {
             e = value;
         }
@@ -169,8 +203,10 @@ int main(int argc, char** argv) {
     unsigned num_readers = atoi(argv[2]);
     unsigned num_writers = atoi(argv[3]);
 
-#ifdef XMUTEX
-    Driver<XMutex> driver{vec_size, num_readers, num_writers};
+#ifdef X_STD_MUTEX
+    Driver<XStdMutex> driver{vec_size, num_readers, num_writers};
+#elif defined X_TBB_QRW_MUTEX
+    Driver<XTbbQueuingRwMutex> driver{vec_size, num_readers, num_writers};
 #else
     Driver<XRcuPtr> driver{vec_size, num_readers, num_writers};
 #endif
