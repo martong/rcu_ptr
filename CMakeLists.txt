@@ -55,6 +55,14 @@ else ()
 
 endif ()
 
+if(UNIX AND NOT APPLE)
+    set(LINUX TRUE)
+endif()
+set(ATOMICLIB "")
+# Currently OSX cannot link with latomic
+if(LINUX)
+  set(ATOMICLIB atomic)
+endif()
 
 include_directories ("${PROJECT_SOURCE_DIR}")
 add_subdirectory (googletest)
@@ -66,3 +74,4 @@ target_compile_options(gtest_main PRIVATE -w)
 
 add_compile_options(-Werror)
 add_subdirectory (tests)
+add_subdirectory (measurements)
