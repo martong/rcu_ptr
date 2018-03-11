@@ -8,7 +8,7 @@
 //#include <unistd.h> // sysconf
 #include <vector>
 
-//inline unsigned cpu_cores() { return sysconf(_SC_NPROCESSORS_ONLN); }
+// inline unsigned cpu_cores() { return sysconf(_SC_NPROCESSORS_ONLN); }
 
 class XRcuPtr {
     rcu_ptr_under_test<std::vector<int>> v;
@@ -89,7 +89,9 @@ struct Driver {
     X x;
     std::atomic<bool> stop = ATOMIC_FLAG_INIT;
     unsigned vec_size, num_readers, num_writers;
-    std::mutex io_mtx;
+    std::mutex finish_mtx;
+    std::vector<long long> reader_cycles;
+    std::vector<long long> writer_cycles;
 
     Driver(unsigned vec_size, unsigned num_readers, unsigned num_writers)
         : x(vec_size),
@@ -104,10 +106,7 @@ struct Driver {
         auto end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double, std::milli> elapsed = end - start;
         stop.store(true, std::memory_order_relaxed);
-        {
-            std::lock_guard<std::mutex> lock(io_mtx);
-            std::cout << "Waited " << elapsed.count() << " ms\n";
-        }
+        std::cout << "Waited " << elapsed.count() << " ms\n";
     }
 
     // void reader_fun_rr() {
@@ -126,8 +125,8 @@ struct Driver {
             }
         }
         {
-            std::lock_guard<std::mutex> lock(io_mtx);
-            std::cout << "reader thread: " << cycles << "\n";
+            std::lock_guard<std::mutex> lock(finish_mtx);
+            reader_cycles.push_back(cycles);
         }
     }
 
@@ -140,14 +139,31 @@ struct Driver {
             }
         }
         {
-            std::lock_guard<std::mutex> lock(io_mtx);
+            std::lock_guard<std::mutex> lock(finish_mtx);
+            writer_cycles.push_back(cycles);
+        }
+    }
+
+    void print_stats() {
+        long long reader_sum = 0, writer_sum = 0;
+        for (auto cycles : reader_cycles) {
+            reader_sum += cycles;
+            std::cout << "reader thread: " << cycles << "\n";
+        }
+        for (auto cycles : writer_cycles) {
+            writer_sum += cycles;
             std::cout << "writer thread: " << cycles << "\n";
         }
+        std::cout << "reader sum: " << reader_sum << "\n";
+        std::cout << "writer sum: " << writer_sum << "\n";
+        std::cout << "reader av: " << reader_sum / reader_cycles.size() << "\n";
+        std::cout << "writer av: " << writer_sum / writer_cycles.size() << "\n";
     }
 };
 
 int main(int argc, char** argv) {
     assert(argc == 4);
+    (void)argc;
     unsigned vec_size = atoi(argv[1]);
     assert(vec_size >= 1);
     unsigned num_readers = atoi(argv[2]);
@@ -182,6 +198,7 @@ int main(int argc, char** argv) {
     for (auto& t : writer_threads) {
         t.join();
     }
+    driver.print_stats();
 
     return 0;
 }
