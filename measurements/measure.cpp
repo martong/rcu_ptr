@@ -10,9 +10,8 @@
 #include <tbb/queuing_rw_mutex.h>
 #include <tbb/spin_rw_mutex.h>
 
-void f() {
-    tbb::queuing_rw_mutex m;
-}
+#include <urcu-pointer.h>
+#include <urcu.h>
 
 class XRcuPtr {
     rcu_ptr_under_test<std::vector<int>> v;
@@ -92,7 +91,7 @@ public:
         assert(index < v.size());
         return v[index];
     }
-    int read_all() const { // sum
+    int read_all() const {                                 // sum
         tbb::queuing_rw_mutex::scoped_lock lock{m, false}; // read lock
         return std::accumulate(v.begin(), v.end(), 0);
     }
@@ -123,7 +122,7 @@ public:
         assert(index < v.size());
         return v[index];
     }
-    int read_all() const { // sum
+    int read_all() const {                              // sum
         tbb::spin_rw_mutex::scoped_lock lock{m, false}; // read lock
         return std::accumulate(v.begin(), v.end(), 0);
     }
@@ -138,6 +137,65 @@ public:
         for (auto& e : v) {
             e = value;
         }
+    }
+};
+
+class XURCU {
+    std::vector<int>* v;
+    const int default_value = 1;
+    mutable std::mutex m; // to support concurrent writers
+
+public:
+    XURCU(size_t vec_size) : v(new std::vector<int>(vec_size, default_value)) {}
+
+    int read_one(unsigned index) const {
+        rcu_read_lock();
+        const std::vector<int>* local_copy = rcu_dereference(v);
+        assert(index < local_copy->size());
+        int result = (*local_copy)[index];
+        rcu_read_unlock();
+        return result;
+    }
+    int read_all() const { // sum
+        rcu_read_lock();
+        const std::vector<int>* local_copy = rcu_dereference(v);
+        int result = std::accumulate(local_copy->begin(), local_copy->end(), 0);
+        rcu_read_unlock();
+        return result;
+    }
+
+    void update_one(unsigned index, int value) {
+        rcu_read_lock();
+        std::vector<int>* local_copy = rcu_dereference(v);
+        std::vector<int>* local_deep_copy = new std::vector<int>(*local_copy);
+        rcu_read_unlock();
+
+        assert(index < copy->size());
+        (*local_deep_copy)[index] = value;
+        synchronize_rcu();
+        delete local_copy;
+        rcu_assign_pointer(v, local_deep_copy);
+    }
+    void update_all(int value) {
+        std::lock_guard<std::mutex> lock{m}; // support concurrent writers
+
+        rcu_read_lock();
+        std::vector<int>* local_copy = rcu_dereference(v);
+        std::vector<int>* local_deep_copy = new std::vector<int>(*local_copy);
+        rcu_read_unlock();
+
+        assert(index < copy->size());
+        for (auto& e : *local_deep_copy) {
+            e = value;
+        }
+        synchronize_rcu();
+        delete local_copy;
+        rcu_assign_pointer(v, local_deep_copy);
+    }
+
+    ~XURCU() {
+        synchronize_rcu();
+        delete v;
     }
 };
 
@@ -241,6 +299,8 @@ int main(int argc, char** argv) {
     Driver<XTbbQueuingRwMutex> driver{vec_size, num_readers, num_writers};
 #elif defined X_TBB_SRW_MUTEX
     Driver<XTbbSpinRwMutex> driver{vec_size, num_readers, num_writers};
+#elif defined X_URCU
+    Driver<XURCU> driver{vec_size, num_readers, num_writers};
 #else
     Driver<XRcuPtr> driver{vec_size, num_readers, num_writers};
 #endif
