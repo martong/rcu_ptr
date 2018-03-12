@@ -8,6 +8,7 @@
 #include <vector>
 
 #include <tbb/queuing_rw_mutex.h>
+#include <tbb/spin_rw_mutex.h>
 
 void f() {
     tbb::queuing_rw_mutex m;
@@ -103,6 +104,37 @@ public:
     }
     void update_all(int value) {
         tbb::queuing_rw_mutex::scoped_lock lock{m}; // write lock
+        for (auto& e : v) {
+            e = value;
+        }
+    }
+};
+
+class XTbbSpinRwMutex {
+    std::vector<int> v;
+    const int default_value = 1;
+    mutable tbb::spin_rw_mutex m;
+
+public:
+    XTbbSpinRwMutex(size_t vec_size) : v(vec_size, default_value) {}
+
+    int read_one(unsigned index) const {
+        tbb::spin_rw_mutex::scoped_lock lock{m, false}; // read lock
+        assert(index < v.size());
+        return v[index];
+    }
+    int read_all() const { // sum
+        tbb::spin_rw_mutex::scoped_lock lock{m, false}; // read lock
+        return std::accumulate(v.begin(), v.end(), 0);
+    }
+
+    void update_one(unsigned index, int value) {
+        tbb::spin_rw_mutex::scoped_lock lock{m}; // write lock
+        assert(index < v.size());
+        v[index] = value;
+    }
+    void update_all(int value) {
+        tbb::spin_rw_mutex::scoped_lock lock{m}; // write lock
         for (auto& e : v) {
             e = value;
         }
@@ -207,6 +239,8 @@ int main(int argc, char** argv) {
     Driver<XStdMutex> driver{vec_size, num_readers, num_writers};
 #elif defined X_TBB_QRW_MUTEX
     Driver<XTbbQueuingRwMutex> driver{vec_size, num_readers, num_writers};
+#elif defined X_TBB_SRW_MUTEX
+    Driver<XTbbSpinRwMutex> driver{vec_size, num_readers, num_writers};
 #else
     Driver<XRcuPtr> driver{vec_size, num_readers, num_writers};
 #endif

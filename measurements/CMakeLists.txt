@@ -19,3 +19,7 @@ target_compile_options(measure_std_mutex PRIVATE -DX_STD_MUTEX)
 add_executable (measure_tbb_qrw_mutex measure.cpp)
 target_link_libraries (measure_tbb_qrw_mutex pthread ${ATOMICLIB} ${TBB_IMPORTED_TARGETS})
 target_compile_options(measure_tbb_qrw_mutex PRIVATE -DX_TBB_QRW_MUTEX)
+
+add_executable (measure_tbb_srw_mutex measure.cpp)
+target_link_libraries (measure_tbb_srw_mutex pthread ${ATOMICLIB} ${TBB_IMPORTED_TARGETS})
+target_compile_options(measure_tbb_srw_mutex PRIVATE -DX_TBB_SRW_MUTEX)
