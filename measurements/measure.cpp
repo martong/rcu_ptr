@@ -32,12 +32,6 @@ public:
         return std::accumulate(local_copy->begin(), local_copy->end(), 0);
     }
 
-    void update_one(unsigned index, int value) {
-        v.copy_update([=](std::vector<int>* copy) {
-            assert(index < copy->size());
-            (*copy)[index] = value;
-        });
-    }
     void update_all(int value) {
         v.copy_update([=](std::vector<int>* copy) {
             for (auto& e : *copy) {
@@ -65,11 +59,6 @@ public:
         return std::accumulate(v.begin(), v.end(), 0);
     }
 
-    void update_one(unsigned index, int value) {
-        std::lock_guard<std::mutex> lock{m};
-        assert(index < v.size());
-        v[index] = value;
-    }
     void update_all(int value) {
         std::lock_guard<std::mutex> lock{m};
         for (auto& e : v) {
@@ -96,11 +85,6 @@ public:
         return std::accumulate(v.begin(), v.end(), 0);
     }
 
-    void update_one(unsigned index, int value) {
-        tbb::queuing_rw_mutex::scoped_lock lock{m}; // write lock
-        assert(index < v.size());
-        v[index] = value;
-    }
     void update_all(int value) {
         tbb::queuing_rw_mutex::scoped_lock lock{m}; // write lock
         for (auto& e : v) {
@@ -127,11 +111,6 @@ public:
         return std::accumulate(v.begin(), v.end(), 0);
     }
 
-    void update_one(unsigned index, int value) {
-        tbb::spin_rw_mutex::scoped_lock lock{m}; // write lock
-        assert(index < v.size());
-        v[index] = value;
-    }
     void update_all(int value) {
         tbb::spin_rw_mutex::scoped_lock lock{m}; // write lock
         for (auto& e : v) {
@@ -164,18 +143,6 @@ public:
         return result;
     }
 
-    void update_one(unsigned index, int value) {
-        rcu_read_lock();
-        std::vector<int>* local_copy = rcu_dereference(v);
-        std::vector<int>* local_deep_copy = new std::vector<int>(*local_copy);
-        rcu_read_unlock();
-
-        assert(index < copy->size());
-        (*local_deep_copy)[index] = value;
-        synchronize_rcu();
-        delete local_copy;
-        rcu_assign_pointer(v, local_deep_copy);
-    }
     void update_all(int value) {
         std::lock_guard<std::mutex> lock{m}; // support concurrent writers
 
@@ -254,6 +221,21 @@ struct Driver {
         }
     }
 
+    void one_reader_fun() {
+        long long cycles = 0;
+        RoundRobin rr{vec_size};
+        while (!stop.load(std::memory_order_relaxed)) {
+            for (int i = 0; i < 1000; ++i) {
+                x.read_one(rr.next());
+                ++cycles;
+            }
+        }
+        {
+            std::lock_guard<std::mutex> lock(finish_mtx);
+            reader_cycles.push_back(cycles);
+        }
+    }
+
     void writer_fun() {
         long long cycles = 0;
         while (!stop.load(std::memory_order_relaxed)) {
@@ -269,6 +251,7 @@ struct Driver {
     }
 
     void print_stats() {
+        std::cout.imbue(std::locale(std::locale("")));
         long long reader_sum = 0, writer_sum = 0;
         for (auto cycles : reader_cycles) {
             reader_sum += cycles;
@@ -280,18 +263,34 @@ struct Driver {
         }
         std::cout << "reader sum: " << reader_sum << "\n";
         std::cout << "writer sum: " << writer_sum << "\n";
-        std::cout << "reader av: " << reader_sum / reader_cycles.size() << "\n";
-        std::cout << "writer av: " << writer_sum / writer_cycles.size() << "\n";
+        std::cout << "reader av: " << (reader_cycles.size() > 0
+                                           ? reader_sum / reader_cycles.size()
+                                           : 0)
+                  << "\n";
+        std::cout << "writer av: " << (writer_cycles.size() > 0
+                                           ? writer_sum / writer_cycles.size()
+                                           : 0)
+                  << "\n";
     }
 };
 
 int main(int argc, char** argv) {
-    assert(argc == 4);
-    (void)argc;
-    unsigned vec_size = atoi(argv[1]);
+    if (argc != 5) {
+        std::cerr << "Wrong program args!\n";
+        exit(-1);
+    }
+    if (std::string(argv[1]) != "read_one" && std::string(argv[1]) != "read_all") {
+        std::cerr << "Wrong program args of read one/all!\n";
+        exit(-2);
+    }
+    bool read_one = std::string(argv[1]) == "read_one";
+    if (read_one) {
+        std::cout << "read_one set\n";
+    }
+    unsigned vec_size = atoi(argv[2]);
     assert(vec_size >= 1);
-    unsigned num_readers = atoi(argv[2]);
-    unsigned num_writers = atoi(argv[3]);
+    unsigned num_readers = atoi(argv[3]);
+    unsigned num_writers = atoi(argv[4]);
 
 #ifdef X_STD_MUTEX
     Driver<XStdMutex> driver{vec_size, num_readers, num_writers};
@@ -309,12 +308,14 @@ int main(int argc, char** argv) {
     std::vector<std::thread> reader_threads;
     std::vector<std::thread> writer_threads;
 
-    // update_all vs read_all
-    // TODO update_all vs read_one, maybe with round robin, or read at a fix
-    // index per thread?
     for (unsigned i = 0; i < num_readers; ++i) {
-        reader_threads.push_back(
-            std::thread([&driver]() { driver.reader_fun(); }));
+        if (read_one) {
+            reader_threads.push_back(
+                std::thread([&driver]() { driver.one_reader_fun(); }));
+        } else {
+            reader_threads.push_back(
+                std::thread([&driver]() { driver.reader_fun(); }));
+        }
     }
     for (unsigned i = 0; i < num_writers; ++i) {
         writer_threads.push_back(
