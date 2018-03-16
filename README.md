@@ -275,6 +275,7 @@ If you want to use the lock-free implementation of `atomic_shared_ptr` (from Ant
 Tests and measurements are included to verify the concept and expected behaviour of the `rcu_ptr`.
 We use [CMake] (https://cmake.org/) and the tests may be built with [ThreadSanitizer] (https://code.google.com/archive/p/data-race-test/wikis/ThreadSanitizer.wiki) introduced in GCC 4.8.
 The tests require polimorphic lambdas from C++14.
+To build the measurements as well, we need to install URCU in the system (http://liburcu.org/).
 ```bash
 git clone git@github.com:martong/rcu_ptr.git
 cd rcu_ptr
