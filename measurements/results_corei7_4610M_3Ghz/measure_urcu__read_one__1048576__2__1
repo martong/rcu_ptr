@@ -1,0 +1,27 @@
+read_one set
+Waited 3000.09 ms
+reader thread: 161.298.000
+reader thread: 147.296.000
+writer thread: 4.000
+reader sum: 308.594.000
+writer sum: 4.000
+reader av: 154.297.000
+writer av: 4.000
+
+ Performance counter stats for '../build/release/measurements/measure_urcu read_one 1048576 2 1':
+
+       9217,610934      task-clock (msec)         #    2,848 CPUs utilized          
+               898      context-switches          #    0,097 K/sec                  
+                 4      cpu-migrations            #    0,000 K/sec                  
+             4.250      page-faults               #    0,461 K/sec                  
+    27.462.228.045      cycles                    #    2,979 GHz                      (46,99%)
+    34.686.806.524      instructions              #    1,26  insn per cycle           (59,59%)
+    10.747.948.615      branches                  # 1166,023 M/sec                    (62,45%)
+           662.130      branch-misses             #    0,01% of all branches          (58,86%)
+    17.438.484.781      L1-dcache-loads           # 1891,866 M/sec                    (43,46%)
+       568.752.738      L1-dcache-load-misses     #    3,26% of all L1-dcache hits    (33,89%)
+       225.222.696      LLC-loads                 #   24,434 M/sec                    (26,91%)
+        47.937.149      LLC-load-misses           #   21,28% of all LL-cache hits     (36,09%)
+
+       3,236255702 seconds time elapsed
+

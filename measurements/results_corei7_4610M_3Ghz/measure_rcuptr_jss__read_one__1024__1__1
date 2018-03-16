@@ -1,0 +1,26 @@
+read_one set
+Waited 3000.07 ms
+reader thread: 20.457.000
+writer thread: 1.651.000
+reader sum: 20.457.000
+writer sum: 1.651.000
+reader av: 20.457.000
+writer av: 1.651.000
+
+ Performance counter stats for '../build/release/measurements/measure_rcuptr_jss read_one 1024 1 1':
+
+       5997,793923      task-clock (msec)         #    1,998 CPUs utilized          
+               610      context-switches          #    0,102 K/sec                  
+                 2      cpu-migrations            #    0,000 K/sec                  
+               156      page-faults               #    0,026 K/sec                  
+    17.908.747.822      cycles                    #    2,986 GHz                      (49,88%)
+     7.614.231.488      instructions              #    0,43  insn per cycle           (62,41%)
+     1.422.376.937      branches                  #  237,150 M/sec                    (62,41%)
+        14.243.419      branch-misses             #    1,00% of all branches          (62,52%)
+     1.710.691.715      L1-dcache-loads           #  285,220 M/sec                    (62,37%)
+       114.156.011      L1-dcache-load-misses     #    6,67% of all L1-dcache hits    (25,08%)
+        29.151.948      LLC-loads                 #    4,860 M/sec                    (25,00%)
+             7.351      LLC-load-misses           #    0,03% of all LL-cache hits     (37,39%)
+
+       3,002062006 seconds time elapsed
+

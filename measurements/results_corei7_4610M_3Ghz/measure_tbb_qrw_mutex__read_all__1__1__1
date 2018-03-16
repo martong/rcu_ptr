@@ -1,0 +1,25 @@
+Waited 3000.07 ms
+reader thread: 5.362.000
+writer thread: 5.363.000
+reader sum: 5.362.000
+writer sum: 5.363.000
+reader av: 5.362.000
+writer av: 5.363.000
+
+ Performance counter stats for '../build/release/measurements/measure_tbb_qrw_mutex read_all 1 1 1':
+
+       5997,343294      task-clock (msec)         #    1,998 CPUs utilized          
+               537      context-switches          #    0,090 K/sec                  
+                 1      cpu-migrations            #    0,000 K/sec                  
+               163      page-faults               #    0,027 K/sec                  
+    17.909.558.211      cycles                    #    2,986 GHz                      (49,88%)
+     9.998.106.411      instructions              #    0,56  insn per cycle           (62,41%)
+     2.040.742.155      branches                  #  340,274 M/sec                    (62,41%)
+        37.920.227      branch-misses             #    1,86% of all branches          (62,49%)
+     2.487.707.696      L1-dcache-loads           #  414,802 M/sec                    (62,39%)
+        57.739.857      L1-dcache-load-misses     #    2,32% of all L1-dcache hits    (25,09%)
+        23.152.922      LLC-loads                 #    3,861 M/sec                    (25,01%)
+             7.516      LLC-load-misses           #    0,03% of all LL-cache hits     (37,42%)
+
+       3,001753363 seconds time elapsed
+

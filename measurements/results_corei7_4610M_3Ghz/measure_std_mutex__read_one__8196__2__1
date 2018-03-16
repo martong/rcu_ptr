@@ -1,0 +1,27 @@
+read_one set
+Waited 3000.07 ms
+reader thread: 2.461.000
+reader thread: 2.527.000
+writer thread: 1.516.000
+reader sum: 4.988.000
+writer sum: 1.516.000
+reader av: 2.494.000
+writer av: 1.516.000
+
+ Performance counter stats for '../build/release/measurements/measure_std_mutex read_one 8196 2 1':
+
+       4903,942031      task-clock (msec)         #    1,634 CPUs utilized          
+           460.856      context-switches          #    0,094 M/sec                  
+                80      cpu-migrations            #    0,016 K/sec                  
+               155      page-faults               #    0,032 K/sec                  
+    11.600.855.555      cycles                    #    2,366 GHz                      (48,78%)
+    19.155.069.985      instructions              #    1,65  insn per cycle           (61,93%)
+     3.837.027.924      branches                  #  782,437 M/sec                    (62,07%)
+        23.711.225      branch-misses             #    0,62% of all branches          (62,93%)
+     1.155.290.501      L1-dcache-loads           #  235,584 M/sec                    (44,03%)
+       474.489.740      L1-dcache-load-misses     #   41,07% of all L1-dcache hits    (27,92%)
+        17.953.310      LLC-loads                 #    3,661 M/sec                    (26,00%)
+             4.180      LLC-load-misses           #    0,02% of all LL-cache hits     (36,20%)
+
+       3,001948221 seconds time elapsed
+
