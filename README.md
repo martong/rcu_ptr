@@ -235,14 +235,46 @@ The user had to do the copy with make_shared.
 At the moment, the last one is the chosen one.
 
 ## Usage
-### Prerequisites
 
-`rcu_ptr` depends on the features of the `C++14` standard, the tests are built with [CMake] (https://cmake.org/) (and with the GNU C++ toolchain) and dependent on the [ThreadSanitizer] (https://code.google.com/archive/p/data-race-test/wikis/ThreadSanitizer.wiki) introduced in GCC 4.8.
+`rcu_ptr` depends on the features of the `C++11` standard.
+`rcu_ptr` has two default template parameters which makes it possible to use a different `atomic_shared_ptr` other than the default setting.
+By default we use a wrapper class which uses the [free function overloads for `std::shared_ptr`] (http://en.cppreference.com/w/cpp/memory/shared_ptr/atomic).
+Note, these overloads are not implemented in GCC/libstdc++ if the version is less than 5.0 (https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57250).
+We can use the lock-free `atomic_shared_ptr` from Anthony Williams like this:
+```
+#include <rcu_ptr.hpp>
+#include <jss/atomic_shared_ptr>
+#include <jss/atomic_shared_ptr_traits.hpp>
+
+using asp_traits = jss::atomic_shared_ptr_traits<jss::atomic_shared_ptr>;
+
+template <typename T>
+using RcuPtr = rcu_ptr<T, jss::atomic_shared_ptr, asp_traits>;
+
+void bar(asp_traits::shared_ptr<int> sp);
+void foo() {
+    auto i = asp_traits::make_shared<int>(42);
+    bar(i);
+}
+void f() {
+    rcu_ptr_under_test<int> p;
+    auto const new_ = asp_traits::make_shared<int>(42);
+    p.reset(new_);
+}
+```
+`asp_traits` provides the actual type of the `shared_ptr` (and `make_shared`) which is connected to the underlying `atomic_shared_ptr`.
+For extensive usage examples please check in `test/rcu_race.cpp`.
+
 
 ### Building
 
 The library is header only: `rcu_ptr.hpp`, thus it requires no build.
-However, tests are included to verify the concept and expected behaviour of the `rcu_ptr`. Each of these are in the subdirectories and building them is quite simple.
+The directory `detail` must be in the include path as well.
+If you want to use the lock-free implementation of `atomic_shared_ptr` (from Anthony Williams) as the underlying `shared_ptr` then `jss` must be in the path too and `rcu_ptr` shall be instantiated with types from the jss namespace.
+
+Tests and measurements are included to verify the concept and expected behaviour of the `rcu_ptr`.
+We use [CMake] (https://cmake.org/) and the tests may be built with [ThreadSanitizer] (https://code.google.com/archive/p/data-race-test/wikis/ThreadSanitizer.wiki) introduced in GCC 4.8.
+The tests require polimorphic lambdas from C++14.
 ```bash
 git clone git@github.com:martong/rcu_ptr.git
 cd rcu_ptr
@@ -254,6 +286,9 @@ cmake -G Ninja ..
 ninja
 ctest
 ```
+
+We tested `rcu_ptr` on Linux with gcc 5 and 7 and our primary target is Linux/gcc7.
+On macOs we could not use the `jss::atomic_shared_ptr`, so the jss targets are not supported on macOs.
 
 [1]: https://lwn.net/Articles/262464/
 [2]: https://en.wikipedia.org/wiki/Read-copy-update
