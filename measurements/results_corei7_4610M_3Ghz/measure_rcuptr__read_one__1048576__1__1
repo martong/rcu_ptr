@@ -1,0 +1,26 @@
+read_one set
+Waited 3000.11 ms
+reader thread: 69.724.000
+writer thread: 4.000
+reader sum: 69.724.000
+writer sum: 4.000
+reader av: 69.724.000
+writer av: 4.000
+
+ Performance counter stats for '../build/release/measurements/measure_rcuptr read_one 1048576 1 1':
+
+       6215,825904      task-clock (msec)         #    1,927 CPUs utilized          
+               671      context-switches          #    0,108 K/sec                  
+                 4      cpu-migrations            #    0,001 K/sec                  
+             4.243      page-faults               #    0,683 K/sec                  
+    18.532.389.719      cycles                    #    2,981 GHz                      (49,92%)
+    19.599.978.934      instructions              #    1,06  insn per cycle           (62,42%)
+     4.181.373.819      branches                  #  672,698 M/sec                    (62,42%)
+           345.638      branch-misses             #    0,01% of all branches          (62,43%)
+     3.725.515.347      L1-dcache-loads           #  599,360 M/sec                    (62,26%)
+       529.037.170      L1-dcache-load-misses     #   14,20% of all L1-dcache hits    (25,10%)
+       229.718.995      LLC-loads                 #   36,957 M/sec                    (25,07%)
+        53.663.406      LLC-load-misses           #   23,36% of all LL-cache hits     (37,51%)
+
+       3,225617692 seconds time elapsed
+

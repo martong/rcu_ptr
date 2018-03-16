@@ -1,0 +1,27 @@
+Waited 3000.06 ms
+reader thread: 2.973.000
+reader thread: 1.461.000
+reader thread: 1.476.000
+writer thread: 61.926.000
+reader sum: 5.910.000
+writer sum: 61.926.000
+reader av: 1.970.000
+writer av: 61.926.000
+
+ Performance counter stats for '../build/release/measurements/measure_tbb_srw_mutex read_all 32 3 1':
+
+      11918,187908      task-clock (msec)         #    3,970 CPUs utilized          
+             1.310      context-switches          #    0,110 K/sec                  
+                 6      cpu-migrations            #    0,001 K/sec                  
+               170      page-faults               #    0,014 K/sec                  
+    35.545.682.810      cycles                    #    2,982 GHz                      (47,40%)
+    19.146.122.234      instructions              #    0,54  insn per cycle           (59,95%)
+     3.644.170.308      branches                  #  305,765 M/sec                    (59,42%)
+        82.547.238      branch-misses             #    2,27% of all branches          (57,96%)
+     4.368.975.853      L1-dcache-loads           #  366,581 M/sec                    (35,45%)
+        46.198.551      L1-dcache-load-misses     #    1,06% of all L1-dcache hits    (30,87%)
+        18.488.669      LLC-loads                 #    1,551 M/sec                    (26,12%)
+            13.768      LLC-load-misses           #    0,07% of all LL-cache hits     (36,07%)
+
+       3,001842271 seconds time elapsed
+
