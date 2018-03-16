@@ -257,7 +257,7 @@ void foo() {
     bar(i);
 }
 void f() {
-    rcu_ptr_under_test<int> p;
+    RcuPtr<int> p;
     auto const new_ = asp_traits::make_shared<int>(42);
     p.reset(new_);
 }
