@@ -9,13 +9,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 dot_line_formats = {
-    'measure_std_mutex': ('bs', '-b'),
-    'measure_tbb_srw_mutex': ('rd', '-r'),
-    'measure_tbb_qrw_mutex': ('ro', '-r'),
-    'measure_rcuptr': ('gv', '-g'),
-    'measure_rcuptr_jss': ('g^', '-g'),
-    'measure_urcu': ('c+', '-c'),
-    'measure_urcu_mb': ('cx', '-c'),
+    'std_mutex': ('bs', '-b'),
+    'tbb_srw_mutex': ('rd', '-r'),
+    'tbb_qrw_mutex': ('ro', '-r'),
+    'rcuptr': ('gv', '-g'),
+    'rcuptr_jss': ('g^', '-g'),
+    'urcu': ('c+', '-c'),
+    'urcu_mb': ('cx', '-c'),
 }
 
 
@@ -43,6 +43,8 @@ class ChartLine:
 def display(measures, vec_size, num_writers, read_op, value, skip_urcu=False):
     chartData = dict()
     for m in measures:
+        # if int(m.num_readers) > 5:
+            # continue
         if skip_urcu and 'urcu' in m.test_bin:
             continue
         if (m.vec_size == vec_size and m.num_writers ==
@@ -62,22 +64,33 @@ def display(measures, vec_size, num_writers, read_op, value, skip_urcu=False):
         " num_writers: " +
         str(num_writers))
     plt.ylabel(value)
+    plt.xlabel("# reader threads")
     plotChartData(chartData)
 
 
 def plotChartData(chartData):
     for key, chartline in chartData.iteritems():
-        plot(chartline.x, chartline.y, key)
+        plot(chartline.x, chartline.y, key[len("measure_"):])
     plt.show()
 
 
 def plot(xs, ys, name):
+    # interpolation
     # fit = np.polyfit(xs, ys, 1)
     # fit_fn = np.poly1d(fit)
-    plt.plot(xs, ys, dot_line_formats[name][0], label=name)
-    plt.plot(xs, ys, dot_line_formats[name][1])
     # plt.plot(xs, fit_fn(xs), line_formats[i])
-    plt.legend(loc='upper left', shadow=True, fontsize='medium')
+
+    ax = plt.subplot(111)
+
+    # linear scale
+    # ax.plot(xs, ys, dot_line_formats[name][0], label=name)
+    # ax.plot(xs, ys, dot_line_formats[name][1])
+    # ax.legend(loc='upper left', shadow=True, fontsize='small')
+
+    # logarithmic scale
+    ax.semilogy(xs, ys, dot_line_formats[name][0], label=name)
+    ax.semilogy(xs, ys, dot_line_formats[name][1])
+    ax.legend(loc='lower right', fontsize='small', shadow=True, ncol=2)
 
 
 def main():
@@ -110,11 +123,15 @@ def main():
                     setattr(measure, attr, int(locale.atof(value)))
         measures.append(measure)
 
-    display(measures, '1', '1', 'read_all', 'reader_sum', args.skip_urcu)
-    display(measures, '1024', '1', 'read_all', 'reader_sum', args.skip_urcu)
-    display(measures, '8196', '1', 'read_all', 'reader_sum', args.skip_urcu)
-    display(measures, '131072', '1', 'read_all', 'reader_sum', args.skip_urcu)
-    display(measures, '1048576', '1', 'read_all', 'reader_sum', args.skip_urcu)
+    # display(measures, '1', '1', 'read_all', 'reader_sum', args.skip_urcu)
+    # display(measures, '1024', '1', 'read_all', 'reader_sum', args.skip_urcu)
+    # display(measures, '8196', '1', 'read_all', 'reader_sum', args.skip_urcu)
+    # display(measures, '131072', '1', 'read_all', 'reader_sum', args.skip_urcu)
+    # display(measures, '1048576', '1', 'read_all', 'reader_sum', args.skip_urcu)
+
+    display(measures, '8196', '2', 'read_all', 'reader_sum', args.skip_urcu)
+    display(measures, '131072', '2', 'read_all', 'reader_sum', args.skip_urcu)
+    display(measures, '1048576', '2', 'read_all', 'reader_sum', args.skip_urcu)
 
 
 if __name__ == "__main__":
