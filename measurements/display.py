@@ -97,6 +97,8 @@ def main():
 
     measures = []
     for file in os.listdir(args.result_dir):
+        if '__' not in file:
+            continue
         elements = file.split('__')
         measure = Measure(elements[0], elements[1], elements[2],
                           elements[3], elements[4])
