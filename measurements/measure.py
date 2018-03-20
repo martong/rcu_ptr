@@ -34,13 +34,20 @@ def call_command(cmd, cwd=None, env=None):
         raise
 
 
-def one_measure(args, test_bin, read_op, vec_size, num_writers, num_readers):
+def one_measure(
+        args,
+        test_bin,
+        num_all_readers,
+        vec_size,
+        num_writers,
+        num_readers):
     binary = os.path.join(args.bin_dir, test_bin)
-    file_name = '__'.join([test_bin, read_op, vec_size, num_readers,
+    file_name = '__'.join([test_bin, vec_size, num_all_readers, num_readers,
                            num_writers])
     print(file_name)
-    out, err = call_command(['perf', 'stat', '-d', binary, read_op,
-                             vec_size, num_readers, num_writers])
+    out, err = call_command(
+        ['perf', 'stat', '-d', binary, vec_size, num_all_readers, num_readers,
+         num_writers])
     with open(os.path.join(args.result_dir, file_name), 'w') as f:
         f.write(out)
         f.write(err)
@@ -64,24 +71,28 @@ def main():
         "measure_rcuptr_jss",
         "measure_tbb_qrw_mutex",
         "measure_tbb_srw_mutex",
-        "measure_urcu",
-        "measure_urcu_mb"]
+        "measure_urcu_bp",
+    ]
 
-    read_ops = ['read_all', 'read_one']
-    vec_sizes = ['1', '32', '1024', '8196', '131072', '1048576']
+    # vec_sizes = ['8196', '131072', '1048576']
+    vec_sizes = ['8196']
+    all_readers = ['0', '1']
     writers = ['1']
 
     print("cpu count: " + str(multiprocessing.cpu_count()))
     for test_bin in test_bins:
-        for read_op in read_ops:
+        for num_all_readers in all_readers:
             for vec_size in vec_sizes:
                 for num_writers in writers:
-                    max_readers = multiprocessing.cpu_count() - int(num_writers)
+                    max_readers = (
+                        multiprocessing.cpu_count() -
+                        int(num_writers) -
+                        int(num_all_readers))
                     for num_readers in range(1, max_readers + 1):
                         one_measure(
                             args,
                             test_bin,
-                            read_op,
+                            num_all_readers,
                             vec_size,
                             num_writers,
                             str(num_readers))
