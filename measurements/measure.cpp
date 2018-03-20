@@ -251,7 +251,6 @@ struct Driver {
     }
 
     void print_stats() {
-        std::cout.imbue(std::locale(std::locale("")));
         long long reader_sum = 0, writer_sum = 0;
         for (auto cycles : reader_cycles) {
             reader_sum += cycles;
