@@ -74,8 +74,7 @@ def main():
         "measure_urcu_bp",
     ]
 
-    # vec_sizes = ['8196', '131072', '1048576']
-    vec_sizes = ['8196']
+    vec_sizes = ['8196', '131072', '1048576']
     all_readers = ['0', '1']
     writers = ['1']
 
