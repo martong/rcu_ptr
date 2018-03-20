@@ -11,7 +11,11 @@
 #include <tbb/spin_rw_mutex.h>
 
 #include <urcu-pointer.h>
-#include <urcu.h>
+#ifdef X_URCU_BP
+  #include <urcu-bp.h>
+#else
+  #include <urcu.h>
+#endif
 
 class XRcuPtr {
     rcu_ptr_under_test<std::vector<int>> v;

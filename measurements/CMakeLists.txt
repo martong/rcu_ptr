@@ -31,3 +31,7 @@ target_compile_options(measure_urcu PRIVATE -DX_URCU)
 add_executable (measure_urcu_mb measure.cpp)
 target_link_libraries (measure_urcu_mb urcu-mb pthread)
 target_compile_options(measure_urcu_mb PRIVATE -DRCU_MB -DX_URCU)
+
+add_executable (measure_urcu_bp measure.cpp)
+target_link_libraries (measure_urcu_bp urcu-bp pthread)
+target_compile_options(measure_urcu_bp PRIVATE -DX_URCU -DX_URCU_BP)
