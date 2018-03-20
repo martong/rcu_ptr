@@ -11,10 +11,17 @@
 #include <tbb/spin_rw_mutex.h>
 
 #include <urcu-pointer.h>
-#ifdef X_URCU_BP
-  #include <urcu-bp.h>
+
+#ifdef X_URCU
+  #ifdef X_URCU_BP
+    #include <urcu-bp.h>
+  #else
+    #include <urcu.h>
+  #endif
 #else
-  #include <urcu.h>
+  //urcu-bp.h renders rcu_init, rcu_register_thread, rcu_unregister_thread to
+  //noop.
+  #include <urcu-bp.h>
 #endif
 
 class XRcuPtr {
@@ -311,18 +318,28 @@ int main(int argc, char** argv) {
     std::vector<std::thread> reader_threads;
     std::vector<std::thread> writer_threads;
 
+    rcu_init();
     for (unsigned i = 0; i < num_readers; ++i) {
         if (read_one) {
-            reader_threads.push_back(
-                std::thread([&driver]() { driver.one_reader_fun(); }));
+            reader_threads.push_back(std::thread([&driver]() {
+                rcu_register_thread();
+                driver.one_reader_fun();
+                rcu_unregister_thread();
+            }));
         } else {
-            reader_threads.push_back(
-                std::thread([&driver]() { driver.reader_fun(); }));
+            reader_threads.push_back(std::thread([&driver]() {
+                rcu_register_thread();
+                driver.reader_fun();
+                rcu_unregister_thread();
+            }));
         }
     }
     for (unsigned i = 0; i < num_writers; ++i) {
-        writer_threads.push_back(
-            std::thread([&driver]() { driver.writer_fun(); }));
+        writer_threads.push_back(std::thread([&driver]() {
+            rcu_register_thread();
+            driver.writer_fun();
+            rcu_unregister_thread();
+        }));
     }
 
     timer_thread.join();
