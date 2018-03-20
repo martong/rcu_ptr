@@ -5,8 +5,13 @@ import re
 import locale
 
 from matplotlib import rc
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
+
+rc('text', usetex=True)
+rc('font', **{'family': 'serif', 'serif': ['Computer Modern Roman']})
+matplotlib.rcParams.update({'font.size': 10})
 
 dot_line_formats = {
     'std_mutex': ('bs', '-b'),
@@ -57,21 +62,20 @@ def display(measures, vec_size, num_writers, read_op, value, skip_urcu=False):
         lists = sorted(chartline.values.items())
         chartline.x, chartline.y = zip(*lists)
 
-    plt.title(
-        read_op +
-        " vec_size: " +
-        str(vec_size) +
-        " num_writers: " +
-        str(num_writers))
-    plt.ylabel(value)
-    plt.xlabel("# reader threads")
-    plotChartData(chartData)
-
-
-def plotChartData(chartData):
+    title = read_op + " vec_size: " + str(
+        vec_size) + " num_writers: " + str(num_writers)
+    title = title.replace('_', ' ')
+    plt.title(title)
+    plt.ylabel(value.replace('_', ' '))
+    plt.xlabel("reader threads")
     for key, chartline in chartData.iteritems():
         plot(chartline.x, chartline.y, key[len("measure_"):])
-    plt.show()
+
+    # plt.show()
+    filename = "_".join([read_op, str(vec_size), str(num_writers)])
+    plt.savefig(filename + ".png")
+    # plt.savefig(filename + ".eps", format='eps', dpi=1000)
+    plt.clf()
 
 
 def plot(xs, ys, name):
@@ -80,7 +84,7 @@ def plot(xs, ys, name):
     # fit_fn = np.poly1d(fit)
     # plt.plot(xs, fit_fn(xs), line_formats[i])
 
-    ax = plt.subplot(111)
+    ax=plt.subplot(111)
 
     # linear scale
     # ax.plot(xs, ys, dot_line_formats[name][0], label=name)
@@ -88,37 +92,37 @@ def plot(xs, ys, name):
     # ax.legend(loc='upper left', shadow=True, fontsize='small')
 
     # logarithmic scale
-    ax.semilogy(xs, ys, dot_line_formats[name][0], label=name)
+    ax.semilogy(xs, ys, dot_line_formats[name][0], label=name.replace('_', ' '))
     ax.semilogy(xs, ys, dot_line_formats[name][1])
     ax.legend(loc='lower right', fontsize='small', shadow=True, ncol=2)
 
 
 def main():
-    parser = argparse.ArgumentParser()
+    parser=argparse.ArgumentParser()
     parser.add_argument('--result_dir', help='path of result dir',
                         required=True)
     parser.add_argument('--skip_urcu', dest='skip_urcu', action='store_true')
     parser.set_defaults(skip_urcu=False)
-    args = parser.parse_args()
+    args=parser.parse_args()
 
-    patterns = [
+    patterns=[
         (re.compile("reader sum: ([\d|\.]+)"), 'reader_sum'),
         (re.compile("writer sum: ([\d|\.]+)"), 'writer_sum'),
         (re.compile("reader av: ([\d|\.]+)"), 'reader_av'),
         (re.compile("writer av: ([\d|\.]+)"), 'writer_av'),
     ]
 
-    measures = []
+    measures=[]
     for file in os.listdir(args.result_dir):
         if '__' not in file:
             continue
-        elements = file.split('__')
-        measure = Measure(elements[0], elements[1], elements[2],
+        elements=file.split('__')
+        measure=Measure(elements[0], elements[1], elements[2],
                           elements[3], elements[4])
         for _, line in enumerate(open(os.path.join(args.result_dir, file))):
             for pattern, attr in patterns:
                 for match in re.finditer(pattern, line):
-                    value = match.groups()[0]
+                    value=match.groups()[0]
                     locale.setlocale(locale.LC_NUMERIC, '')
                     setattr(measure, attr, int(locale.atof(value)))
         measures.append(measure)
@@ -127,11 +131,12 @@ def main():
     # display(measures, '1024', '1', 'read_all', 'reader_sum', args.skip_urcu)
     # display(measures, '8196', '1', 'read_all', 'reader_sum', args.skip_urcu)
     # display(measures, '131072', '1', 'read_all', 'reader_sum', args.skip_urcu)
-    # display(measures, '1048576', '1', 'read_all', 'reader_sum', args.skip_urcu)
+    # display(measures, '1048576', '1', 'read_all', 'reader_sum',
+    # args.skip_urcu)
 
-    display(measures, '8196', '2', 'read_all', 'reader_sum', args.skip_urcu)
-    display(measures, '131072', '2', 'read_all', 'reader_sum', args.skip_urcu)
-    display(measures, '1048576', '2', 'read_all', 'reader_sum', args.skip_urcu)
+    display(measures, '8196', '1', 'read_all', 'reader_sum', args.skip_urcu)
+    display(measures, '131072', '1', 'read_all', 'reader_sum', args.skip_urcu)
+    display(measures, '1048576', '1', 'read_all', 'reader_sum', args.skip_urcu)
 
 
 if __name__ == "__main__":
