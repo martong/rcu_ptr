@@ -190,16 +190,13 @@ template <typename X>
 struct Driver {
     X x;
     std::atomic<bool> stop = ATOMIC_FLAG_INIT;
-    unsigned vec_size, num_readers, num_writers;
+    unsigned vec_size;
     std::mutex finish_mtx;
     std::vector<long long> reader_cycles;
     std::vector<long long> writer_cycles;
 
-    Driver(unsigned vec_size, unsigned num_readers, unsigned num_writers)
-        : x(vec_size),
-          vec_size(vec_size),
-          num_readers(num_readers),
-          num_writers(num_writers) {}
+    Driver(unsigned vec_size)
+        : x(vec_size), vec_size(vec_size) {}
 
     void timer_fun() {
         using namespace std::chrono_literals;
@@ -211,17 +208,10 @@ struct Driver {
         std::cout << "Waited " << elapsed.count() << " ms\n";
     }
 
-    // void reader_fun_rr() {
-    // RoundRobin rr{vec_size};
-    // x.read_one(rr.next());
-    //}
-
-    // void reader_fun_one(unsigned index) { x.read_one(index); }
-
     void reader_fun() {
         long long cycles = 0;
         while (!stop.load(std::memory_order_relaxed)) {
-            for (int i = 0; i < 1000; ++i) {
+            for (int i = 0; i < 1; ++i) {
                 x.read_all();
                 ++cycles;
             }
@@ -236,7 +226,7 @@ struct Driver {
         long long cycles = 0;
         RoundRobin rr{vec_size};
         while (!stop.load(std::memory_order_relaxed)) {
-            for (int i = 0; i < 1000; ++i) {
+            for (int i = 0; i < 1; ++i) {
                 x.read_one(rr.next());
                 ++cycles;
             }
@@ -250,7 +240,7 @@ struct Driver {
     void writer_fun() {
         long long cycles = 0;
         while (!stop.load(std::memory_order_relaxed)) {
-            for (int i = 0; i < 1000; ++i) {
+            for (int i = 0; i < 1; ++i) {
                 x.update_all(i);
                 ++cycles;
             }
@@ -289,29 +279,22 @@ int main(int argc, char** argv) {
         std::cerr << "Wrong program args!\n";
         exit(-1);
     }
-    if (std::string(argv[1]) != "read_one" && std::string(argv[1]) != "read_all") {
-        std::cerr << "Wrong program args of read one/all!\n";
-        exit(-2);
-    }
-    bool read_one = std::string(argv[1]) == "read_one";
-    if (read_one) {
-        std::cout << "read_one set\n";
-    }
-    unsigned vec_size = atoi(argv[2]);
+    unsigned vec_size = atoi(argv[1]);
     assert(vec_size >= 1);
-    unsigned num_readers = atoi(argv[3]);
+    unsigned num_all_readers = atoi(argv[2]);
+    unsigned num_one_readers = atoi(argv[3]);
     unsigned num_writers = atoi(argv[4]);
 
 #ifdef X_STD_MUTEX
-    Driver<XStdMutex> driver{vec_size, num_readers, num_writers};
+    Driver<XStdMutex> driver{vec_size};
 #elif defined X_TBB_QRW_MUTEX
-    Driver<XTbbQueuingRwMutex> driver{vec_size, num_readers, num_writers};
+    Driver<XTbbQueuingRwMutex> driver{vec_size};
 #elif defined X_TBB_SRW_MUTEX
-    Driver<XTbbSpinRwMutex> driver{vec_size, num_readers, num_writers};
+    Driver<XTbbSpinRwMutex> driver{vec_size};
 #elif defined X_URCU
-    Driver<XURCU> driver{vec_size, num_readers, num_writers};
+    Driver<XURCU> driver{vec_size};
 #else
-    Driver<XRcuPtr> driver{vec_size, num_readers, num_writers};
+    Driver<XRcuPtr> driver{vec_size};
 #endif
 
     std::thread timer_thread([&driver]() { driver.timer_fun(); });
@@ -319,20 +302,19 @@ int main(int argc, char** argv) {
     std::vector<std::thread> writer_threads;
 
     rcu_init();
-    for (unsigned i = 0; i < num_readers; ++i) {
-        if (read_one) {
-            reader_threads.push_back(std::thread([&driver]() {
-                rcu_register_thread();
-                driver.one_reader_fun();
-                rcu_unregister_thread();
-            }));
-        } else {
-            reader_threads.push_back(std::thread([&driver]() {
-                rcu_register_thread();
-                driver.reader_fun();
-                rcu_unregister_thread();
-            }));
-        }
+    for (unsigned i = 0; i < num_all_readers; ++i) {
+        reader_threads.push_back(std::thread([&driver]() {
+            rcu_register_thread();
+            driver.reader_fun();
+            rcu_unregister_thread();
+        }));
+    }
+    for (unsigned i = 0; i < num_one_readers; ++i) {
+        reader_threads.push_back(std::thread([&driver]() {
+            rcu_register_thread();
+            driver.one_reader_fun();
+            rcu_unregister_thread();
+        }));
     }
     for (unsigned i = 0; i < num_writers; ++i) {
         writer_threads.push_back(std::thread([&driver]() {
