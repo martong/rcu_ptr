@@ -40,10 +40,12 @@ def one_measure(
         num_all_readers,
         vec_size,
         num_writers,
-        num_readers):
+        num_readers,
+        iteration):
     binary = os.path.join(args.bin_dir, test_bin)
     file_name = '__'.join([test_bin, vec_size, num_all_readers, num_readers,
                            num_writers])
+    file_name.append("." + str(iteration))
     print(file_name)
     out, err = call_command(
         ['perf', 'stat', '-d', binary, vec_size, num_all_readers, num_readers,
@@ -77,24 +79,26 @@ def main():
     vec_sizes = ['8196', '131072', '1048576']
     all_readers = ['0', '1']
     writers = ['1']
+    measure_iterations = 5
 
     print("cpu count: " + str(multiprocessing.cpu_count()))
-    for test_bin in test_bins:
-        for num_all_readers in all_readers:
-            for vec_size in vec_sizes:
-                for num_writers in writers:
-                    max_readers = (
-                        multiprocessing.cpu_count() -
-                        int(num_writers) -
-                        int(num_all_readers))
-                    for num_readers in range(1, max_readers + 1):
-                        one_measure(
-                            args,
-                            test_bin,
-                            num_all_readers,
-                            vec_size,
-                            num_writers,
-                            str(num_readers))
+    for iteration in range(0, measure_iterations):
+        for test_bin in test_bins:
+            for num_all_readers in all_readers:
+                for vec_size in vec_sizes:
+                    for num_writers in writers:
+                        max_readers = (
+                            multiprocessing.cpu_count() -
+                            int(num_writers) -
+                            int(num_all_readers))
+                        for num_readers in range(1, max_readers + 1):
+                            one_measure(
+                                args,
+                                test_bin,
+                                num_all_readers,
+                                vec_size,
+                                num_writers,
+                                str(num_readers))
 
 
 if __name__ == "__main__":
