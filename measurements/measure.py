@@ -45,7 +45,7 @@ def one_measure(
     binary = os.path.join(args.bin_dir, test_bin)
     file_name = '__'.join([test_bin, vec_size, num_all_readers, num_readers,
                            num_writers])
-    file_name.append("." + str(iteration))
+    file_name = file_name + "." + str(iteration)
     print(file_name)
     out, err = call_command(
         ['perf', 'stat', '-d', binary, vec_size, num_all_readers, num_readers,
@@ -98,7 +98,9 @@ def main():
                                 num_all_readers,
                                 vec_size,
                                 num_writers,
-                                str(num_readers))
+                                str(num_readers),
+                                iteration
+                            )
 
 
 if __name__ == "__main__":
