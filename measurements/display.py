@@ -9,10 +9,6 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 
-rc('text', usetex=True)
-rc('font', **{'family': 'serif', 'serif': ['Computer Modern Roman']})
-matplotlib.rcParams.update({'font.size': 10})
-
 dot_line_formats = {
     'std_mutex': ('bs', '-b'),
     'tbb_srw_mutex': ('rd', '-r'),
@@ -58,12 +54,14 @@ def display(
         num_writers,
         num_all_readers,
         value,
-        skip_urcu=False):
+        args):
     chartData = dict()
     for m in measures:
         # if int(m.num_readers) > 5:
             # continue
-        if skip_urcu and 'urcu' in m.test_bin:
+        if args.skip_urcu and 'urcu' in m.test_bin:
+            continue
+        if args.skip_mtx and 'mutex' in m.test_bin:
             continue
         if (m.vec_size == vec_size and m.num_writers ==
                 num_writers and m.num_all_readers == num_all_readers):
@@ -82,46 +80,54 @@ def display(
     plt.ylabel(value.replace('_', ' '))
     plt.xlabel("reader threads")
     for key, chartline in chartData.iteritems():
-        plot(chartline.x, chartline.y, key[len("measure_"):])
+        plot(chartline.x, chartline.y, key[len("measure_"):], args)
 
-    plt.show()
-    return
+    if args.save:
+        filename = "_".join(
+            ["res", str(vec_size),
+             str(num_all_readers),
+             str(num_writers)])
+        if args.latex:
+            plt.savefig(filename + ".eps", format='eps', dpi=1000)
+        else:
+            plt.savefig(filename + ".png")
+        plt.clf()
+    else:
+        plt.show()
 
-    filename = "_".join(
-        ["res", str(vec_size),
-         str(num_all_readers),
-         str(num_writers)])
-    plt.savefig(filename + ".png")
-    # plt.savefig(filename + ".eps", format='eps', dpi=1000)
-    plt.clf()
 
-
-def plot(xs, ys, name):
-    # interpolation
-    # fit = np.polyfit(xs, ys, 1)
-    # fit_fn = np.poly1d(fit)
-    # plt.plot(xs, fit_fn(xs), line_formats[i])
-
+def plot(xs, ys, name, args):
     ax = plt.subplot(111)
 
-    # linear scale
-    # ax.plot(xs, ys, dot_line_formats[name][0], label=name)
-    # ax.plot(xs, ys, dot_line_formats[name][1])
-    # ax.legend(loc='upper left', shadow=True, fontsize='small')
-
     # logarithmic scale
-    ax.semilogy(xs, ys, dot_line_formats[name][0], label=name.replace('_', ' '))
-    ax.semilogy(xs, ys, dot_line_formats[name][1])
-    ax.legend(loc='lower right', fontsize='small', shadow=True, ncol=2)
+    if args.log:
+        ax.semilogy(xs, ys, dot_line_formats[name][0],
+                    label=name.replace('_', ' '))
+        ax.semilogy(xs, ys, dot_line_formats[name][1])
+        ax.legend(loc='lower right', fontsize='small', shadow=True, ncol=2)
+
+    # linear scale
+    else:
+        ax.plot(xs, ys, dot_line_formats[name][0], label=name.replace('_', ' '))
+        ax.plot(xs, ys, dot_line_formats[name][1])
+        ax.legend(loc='upper left', shadow=True, fontsize='small')
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--result_dir', help='path of result dir',
                         required=True)
-    parser.add_argument('--skip_urcu', dest='skip_urcu', action='store_true')
-    parser.set_defaults(skip_urcu=False)
+    parser.add_argument('--skip_urcu', action='store_true')
+    parser.add_argument('--skip_mtx', action='store_true')
+    parser.add_argument('--latex', action='store_true')
+    parser.add_argument('--save', action='store_true')
+    parser.add_argument('--log', action='store_true')
     args = parser.parse_args()
+
+    if args.latex:
+        rc('text', usetex=True)
+        rc('font', **{'family': 'serif', 'serif': ['Computer Modern Roman']})
+        matplotlib.rcParams.update({'font.size': 10})
 
     patterns = [
         (re.compile("reader sum: ([\d|\.]+)"), 'reader_sum'),
@@ -145,7 +151,19 @@ def main():
                     setattr(measure, attr, int(locale.atof(value)))
         measures.append(measure)
 
-    display(measures, '8196', '1', '0', 'writer_sum', args.skip_urcu)
+    display(measures, '8196', '1', '0', 'writer_sum', args)
+    display(measures, '131072', '1', '0', 'writer_sum', args)
+    display(measures, '1048576', '1', '0', 'writer_sum', args)
+
+    # slow readers too
+    # display(measures, '8196', '1', '1', 'reader_sum', args)
+    # display(measures, '131072', '1', '1', 'reader_sum', args)
+    # display(measures, '1048576', '1', '1', 'reader_sum', args)
+
+    # slow readers too
+    # display(measures, '8196', '1', '1', 'writer_sum', args)
+    # display(measures, '131072', '1', '1', 'writer_sum', args)
+    # display(measures, '1048576', '1', '1', 'writer_sum', args)
 
 
 if __name__ == "__main__":
