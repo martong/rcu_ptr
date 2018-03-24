@@ -164,7 +164,7 @@ public:
 
         assert(index < copy->size());
         for (auto& e : *local_deep_copy) {
-            e = value;
+            e = ++value;
         }
         synchronize_rcu();
         delete local_copy;
@@ -201,7 +201,7 @@ struct Driver {
     void timer_fun() {
         using namespace std::chrono_literals;
         auto start = std::chrono::high_resolution_clock::now();
-        std::this_thread::sleep_for(3s);
+        std::this_thread::sleep_for(1s);
         auto end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double, std::milli> elapsed = end - start;
         stop.store(true, std::memory_order_relaxed);
@@ -211,10 +211,8 @@ struct Driver {
     void reader_fun() {
         long long cycles = 0;
         while (!stop.load(std::memory_order_relaxed)) {
-            for (int i = 0; i < 1; ++i) {
-                x.read_all();
-                ++cycles;
-            }
+            x.read_all();
+            ++cycles;
         }
         {
             std::lock_guard<std::mutex> lock(finish_mtx);
@@ -226,10 +224,8 @@ struct Driver {
         long long cycles = 0;
         RoundRobin rr{vec_size};
         while (!stop.load(std::memory_order_relaxed)) {
-            for (int i = 0; i < 1; ++i) {
-                x.read_one(rr.next());
-                ++cycles;
-            }
+            x.read_one(rr.next());
+            ++cycles;
         }
         {
             std::lock_guard<std::mutex> lock(finish_mtx);
@@ -240,10 +236,8 @@ struct Driver {
     void writer_fun() {
         long long cycles = 0;
         while (!stop.load(std::memory_order_relaxed)) {
-            for (int i = 0; i < 1; ++i) {
-                x.update_all(i);
-                ++cycles;
-            }
+            x.update_all(0);
+            ++cycles;
         }
         {
             std::lock_guard<std::mutex> lock(finish_mtx);
