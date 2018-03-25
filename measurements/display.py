@@ -7,7 +7,6 @@ import locale
 from matplotlib import rc
 import matplotlib
 import matplotlib.pyplot as plt
-import numpy as np
 
 dot_line_formats = {
     'std_mutex': ('bs', '-b'),
@@ -21,7 +20,9 @@ dot_line_formats = {
 }
 
 
-class Measure:
+# Represents one measurement configuration.
+class MeasureKey:
+
     def __init__(
             self,
             test_bin,
@@ -35,10 +36,38 @@ class Measure:
         self.num_readers = num_readers
         self.num_writers = num_writers
 
-        self.reader_sum = -1
+    def __str__(self):
+        return (self.test_bin +
+                " " +
+                str(self.vec_size) +
+                " " +
+                str(self.num_all_readers) +
+                " " +
+                str(self.num_readers) +
+                " " +
+                str(self.num_writers))
+
+    def __hash__(self):
+        return self.__str__().__hash__()
+
+    def __eq__(self, other):
+        return self.__str__().__eq__(other.__str__())
+
+
+# We have multiple measurement values for the same configuration (i.e.
+# MeasureKey).
+class MeasureIterations:
+
+    def __init__(self):
+        self.reader_sum = []
+        self.writer_sum = []
+
+    def __str__(self):
+        return str(self.reader_sum)
 
 
 class ChartLine:
+
     def __init__(self):
         self.values = dict()
         self.x = []
@@ -46,6 +75,13 @@ class ChartLine:
 
     def __str__(self):
         return "x: " + str(self.x) + "\n" + "y: " + str(self.y)
+
+
+# param l: list
+def getAverage(l):
+    l.remove(max(l))
+    l.remove(min(l))
+    return sum(l) / len(l)
 
 
 def display(
@@ -56,18 +92,22 @@ def display(
         value,
         args):
     chartData = dict()
-    for m in measures:
-        # if int(m.num_readers) > 5:
-            # continue
-        if args.skip_urcu and 'urcu' in m.test_bin:
+    for measureKey, measureIterations in measures.iteritems():
+        print(measureKey)
+        print(measureIterations)
+        print("=======================")
+        if args.skip_urcu and 'urcu' in measureKey.test_bin:
             continue
-        if args.skip_mtx and 'mutex' in m.test_bin:
+        if args.skip_mtx and 'mutex' in measureKey.test_bin:
             continue
-        if (m.vec_size == vec_size and m.num_writers ==
-                num_writers and m.num_all_readers == num_all_readers):
-            if m.test_bin not in chartData:
-                chartData[m.test_bin] = ChartLine()
-            chartData[m.test_bin].values[int(m.num_readers)] = getattr(m, value)
+        if (measureKey.vec_size == vec_size and measureKey.num_writers ==
+                num_writers and measureKey.num_all_readers == num_all_readers):
+            if measureKey.test_bin not in chartData:
+                chartData[measureKey.test_bin] = ChartLine()
+            chartData[
+                measureKey.test_bin].values[
+                int(measureKey.num_readers)] = getAverage(
+                getattr(measureIterations, value))
 
     for key, chartline in chartData.iteritems():
         lists = sorted(chartline.values.items())
@@ -132,38 +172,47 @@ def main():
     patterns = [
         (re.compile("reader sum: ([\d|\.]+)"), 'reader_sum'),
         (re.compile("writer sum: ([\d|\.]+)"), 'writer_sum'),
-        (re.compile("reader av: ([\d|\.]+)"), 'reader_av'),
-        (re.compile("writer av: ([\d|\.]+)"), 'writer_av'),
     ]
 
-    measures = []
+    # Aggregate the values in each files into a dict, where the key is
+    # MeasureKey, and the value is MeasureIterations.
+    # We append the found values in each measureIteration to the specific list.
+    measures = dict()
     for file in os.listdir(args.result_dir):
-        if '__' not in file:
-            continue
-        elements = file.split('__')
-        measure = Measure(elements[0], elements[1], elements[2],
-                          elements[3], elements[4])
+        basename = os.path.splitext(file)[0]
+        elements = basename.split('__')
+        key = MeasureKey(elements[0], elements[1], elements[2],
+                         elements[3], elements[4])
+        if key not in measures:
+            measures[key] = MeasureIterations()
+        measureIt = measures[key]
         for _, line in enumerate(open(os.path.join(args.result_dir, file))):
             for pattern, attr in patterns:
                 for match in re.finditer(pattern, line):
                     value = match.groups()[0]
                     locale.setlocale(locale.LC_NUMERIC, '')
-                    setattr(measure, attr, int(locale.atof(value)))
-        measures.append(measure)
+                    values = getattr(measureIt, attr)
+                    values.append(int(locale.atof(value)))
+                    setattr(measureIt, attr, values)
 
+    # writers
+    """
     display(measures, '8196', '1', '0', 'writer_sum', args)
     display(measures, '131072', '1', '0', 'writer_sum', args)
     display(measures, '1048576', '1', '0', 'writer_sum', args)
+    """
 
     # slow readers too
-    # display(measures, '8196', '1', '1', 'reader_sum', args)
-    # display(measures, '131072', '1', '1', 'reader_sum', args)
-    # display(measures, '1048576', '1', '1', 'reader_sum', args)
+    """
+    display(measures, '8196', '1', '1', 'reader_sum', args)
+    display(measures, '131072', '1', '1', 'reader_sum', args)
+    display(measures, '1048576', '1', '1', 'reader_sum', args)
+    """
 
-    # slow readers too
-    # display(measures, '8196', '1', '1', 'writer_sum', args)
-    # display(measures, '131072', '1', '1', 'writer_sum', args)
-    # display(measures, '1048576', '1', '1', 'writer_sum', args)
+    # no slow readers
+    display(measures, '8196', '1', '0', 'reader_sum', args)
+    display(measures, '131072', '1', '0', 'reader_sum', args)
+    display(measures, '1048576', '1', '0', 'reader_sum', args)
 
 
 if __name__ == "__main__":
