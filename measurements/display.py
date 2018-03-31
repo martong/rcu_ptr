@@ -89,9 +89,9 @@ def display(
         vec_size,
         num_writers,
         num_all_readers,
-        value,
         args):
     chartData = dict()
+    value = args.value
     for measureKey, measureIterations in measures.iteritems():
         print(measureKey)
         print(measureIterations)
@@ -124,7 +124,7 @@ def display(
 
     if args.save:
         filename = "_".join(
-            ["res", str(vec_size),
+            ["res", str(value), str(vec_size),
              str(num_all_readers),
              str(num_writers)])
         if args.latex:
@@ -161,6 +161,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--result_dir', help='path of result dir',
                         required=True)
+    parser.add_argument('--value', required=True, choices=['reader_sum', 'writer_sum'])
     parser.add_argument('--skip_urcu', action='store_true')
     parser.add_argument('--skip_mtx', action='store_true')
     parser.add_argument('--latex', action='store_true')
@@ -200,24 +201,17 @@ def main():
                     values.append(int(locale.atof(value)))
                     setattr(measureIt, attr, values)
 
-    # writers
-    """
-    display(measures, '8196', '1', '0', 'writer_sum', args)
-    display(measures, '131072', '1', '0', 'writer_sum', args)
-    display(measures, '1048576', '1', '0', 'writer_sum', args)
-    """
-
     # slow readers too
     """
-    display(measures, '8196', '1', '1', 'reader_sum', args)
-    display(measures, '131072', '1', '1', 'reader_sum', args)
-    display(measures, '1048576', '1', '1', 'reader_sum', args)
+    display(measures, '8196', '1', '1', args)
+    display(measures, '131072', '1', '1', args)
+    display(measures, '1048576', '1', '1', args)
     """
 
     # no slow readers
-    display(measures, '8196', '1', '0', 'reader_sum', args)
-    display(measures, '131072', '1', '0', 'reader_sum', args)
-    display(measures, '1048576', '1', '0', 'reader_sum', args)
+    display(measures, '8196', '1', '0', args)
+    display(measures, '131072', '1', '0', args)
+    display(measures, '1048576', '1', '0', args)
 
 
 if __name__ == "__main__":
