@@ -84,6 +84,13 @@ def getAverage(l):
     return sum(l) / len(l)
 
 
+# Get a more verbose better reading label to a value
+def getYlabel(value):
+    m = {'reader_sum': 'Number of read operations / second',
+         'writer_sum': 'Number of write operations / second'}
+    return m[value]
+
+
 def display(
         measures,
         vec_size,
@@ -116,9 +123,10 @@ def display(
     title = " vec_size: " + str(vec_size) + " num_writers: " + str(
         num_writers) + " num_all_readers: " + str(num_all_readers)
     title = title.replace('_', ' ')
-    plt.title(title)
-    plt.ylabel(value.replace('_', ' '))
-    plt.xlabel("reader threads")
+    #plt.title(title)
+    #plt.ylabel(value.replace('_', ' '))
+    plt.ylabel(getYlabel(value))
+    plt.xlabel("Number of CPUs (Threads)")
     for key, chartline in chartData.iteritems():
         plot(chartline.x, chartline.y, key[len("measure_"):], args)
 
