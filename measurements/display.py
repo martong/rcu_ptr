@@ -139,18 +139,22 @@ def display(
 def plot(xs, ys, name, args):
     ax = plt.subplot(111)
 
+    fig_loc = 'lower right'
+    if args.fig_loc is not None:
+        fig_loc = args.fig_loc
+
     # logarithmic scale
     if args.log:
         ax.semilogy(xs, ys, dot_line_formats[name][0],
                     label=name.replace('_', ' '))
         ax.semilogy(xs, ys, dot_line_formats[name][1])
-        ax.legend(loc='lower right', fontsize='small', shadow=True, ncol=2)
+        ax.legend(loc=fig_loc, fontsize='small', shadow=True, ncol=2)
 
     # linear scale
     else:
         ax.plot(xs, ys, dot_line_formats[name][0], label=name.replace('_', ' '))
         ax.plot(xs, ys, dot_line_formats[name][1])
-        ax.legend(loc='upper left', shadow=True, fontsize='small')
+        ax.legend(loc=fig_loc, shadow=True, fontsize='small')
 
 
 def main():
@@ -162,6 +166,7 @@ def main():
     parser.add_argument('--latex', action='store_true')
     parser.add_argument('--save', action='store_true')
     parser.add_argument('--log', action='store_true')
+    parser.add_argument('--fig_loc', default=None)
     args = parser.parse_args()
 
     if args.latex:
