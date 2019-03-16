@@ -86,8 +86,8 @@ def getAverage(l):
 
 # Get a more verbose better reading label to a value
 def getYlabel(value):
-    m = {'reader_sum': 'Number of read operations / second',
-         'writer_sum': 'Number of write operations / second'}
+    m = {'reader_sum': 'Number of Read Operations / second',
+         'writer_sum': 'Number of Write Operations / second'}
     return m[value]
 
 
@@ -126,7 +126,7 @@ def display(
     #plt.title(title)
     #plt.ylabel(value.replace('_', ' '))
     plt.ylabel(getYlabel(value))
-    plt.xlabel("Number of CPUs (Threads)")
+    plt.xlabel("Number of Reader Threads")
     for key, chartline in chartData.iteritems():
         plot(chartline.x, chartline.y, key[len("measure_"):], args)
 
@@ -181,7 +181,7 @@ def main():
     if args.latex:
         rc('text', usetex=True)
         rc('font', **{'family': 'serif', 'serif': ['Computer Modern Roman']})
-        matplotlib.rcParams.update({'font.size': 10})
+        matplotlib.rcParams.update({'font.size': 15})
 
     patterns = [
         (re.compile("reader sum: ([\d|\.]+)"), 'reader_sum'),
@@ -218,8 +218,8 @@ def main():
 
     # no slow readers
     display(measures, '8196', '1', '0', args)
-    display(measures, '131072', '1', '0', args)
-    display(measures, '1048576', '1', '0', args)
+    #display(measures, '131072', '1', '0', args)
+    #display(measures, '1048576', '1', '0', args)
 
 
 if __name__ == "__main__":
