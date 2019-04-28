@@ -1,8 +1,10 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 import argparse
 import os
 import re
 import locale
+from decimal import Decimal
 
 from matplotlib import rc
 import matplotlib
@@ -86,8 +88,8 @@ def getAverage(l):
 
 # Get a more verbose better reading label to a value
 def getYlabel(value):
-    m = {'reader_sum': 'Number of Read Operations / second',
-         'writer_sum': 'Number of Write Operations / second'}
+    m = {'reader_sum': u"Number of Read Operations * $10^6$ / second",
+         'writer_sum': 'Number of Write Operations * $10^5$ / second'}
     return m[value]
 
 
@@ -125,6 +127,8 @@ def display(
     title = title.replace('_', ' ')
     #plt.title(title)
     #plt.ylabel(value.replace('_', ' '))
+    # Y axis label is cut off, so we must adjust it
+    plt.gcf().subplots_adjust(left=0.15)
     plt.ylabel(getYlabel(value))
     plt.xlabel("Number of Reader Threads")
     for key, chartline in chartData.iteritems():
@@ -164,6 +168,10 @@ def plot(xs, ys, name, args):
         ax.plot(xs, ys, dot_line_formats[name][1])
         ax.legend(loc=fig_loc, shadow=True, fontsize='small')
 
+    ax.get_yaxis().set_major_formatter(
+        #matplotlib.ticker.FuncFormatter(lambda x, p: '%.1e' % Decimal(x)))
+        matplotlib.ticker.FuncFormatter(lambda x, p: x / 100000))
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -197,6 +205,9 @@ def main():
         elements = basename.split('__')
         key = MeasureKey(elements[0], elements[1], elements[2],
                          elements[3], elements[4])
+        # skip measures when number of readers are below a certain limit
+        #if int(key.num_readers) < 5:
+            #continue
         if key not in measures:
             measures[key] = MeasureIterations()
         measureIt = measures[key]
